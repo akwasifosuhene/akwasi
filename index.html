@@ -211,12 +211,10 @@
         </div>
     </div>
     <script>
-        // Spotify API configuration
         const redirectUri = 'https://jrakwasi.github.io/akwasi/';
         const clientId = '82910fe423f24953a93aa6188fd25c58';
         const scopes = 'playlist-modify-private playlist-modify-public';
 
-        // DOM Elements
         const loginButton = document.getElementById('login-button');
         const loginSection = document.getElementById('login-section');
         const mainApp = document.getElementById('main-app');
@@ -234,4 +232,7 @@
         const statusMessage = document.getElementById('status-message');
         const playlistLink = document.getElementById('playlist-link');
         const totalSongsElement = document.getElementById('total-songs');
-        const matchedSongsElement = document.getElementById
+        const matchedSongsElement = document.getElementById('matched-songs');
+        const unmatchedSongsElement = document.getElementById('unmatched-songs');
+
+        let accessToken = null;
