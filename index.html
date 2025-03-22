@@ -4,31 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spotify Playlist Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        input, button {
+            margin: 10px 0;
+        }
+    </style>
 </head>
 <body>
     <h1>Spotify Playlist Generator</h1>
-    <form id="song </form>
-    <script>
-        async function generatePlaylist() {
-            const songList = document.getElementById('songList').value.split(',');
-            const accessToken = new URLSearchParams(window.location.search).get('access_token');
-            const userId = 'YOUR_SPOTIFY_USER_ID'; // Replace with your Spotify user ID
-
-            const response = await fetch('/create-playlist', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({ userId, songList }),
-            });
-
-            if (response.ok) {
-                alert('Playlist created successfully!');
-            } else {
-                alert('Error creating playlist');
-            }
-        }
-    </script>
+    <form id="songForm">
+        <label for="songs">Enter songs (comma-separated):</label><br>
+        <input type="text" id="songs" name="songs" required><br>
+        <button type="button" onclick="generatePlaylist()">Generate Playlist</button>
+    </form>
+    <div id="preview"></div>
+    <script src="script.js"></script>
 </body>
 </html>
