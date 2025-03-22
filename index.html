@@ -23,8 +23,9 @@
         h1, h2 {
             color: #1DB954;
         }
-        textarea, input {
+        textarea {
             width: 100%;
+            min-height: 150px;
             margin-bottom: 15px;
             padding: 10px;
             border-radius: 4px;
@@ -51,8 +52,79 @@
             background-color: #565656;
             cursor: not-allowed;
         }
-        .hidden {
-            display: none;
+        .song-list {
+            margin-top: 20px;
+        }
+        .song-card {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #282828;
+            border-radius: 4px;
+        }
+        .song-card img {
+            width: 60px;
+            height: 60px;
+            margin-right: 15px;
+            border-radius: 4px;
+        }
+        .song-info {
+            flex-grow: 1;
+        }
+        .song-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .song-artist {
+            color: #b3b3b3;
+            font-size: 14px;
+        }
+        .song-query {
+            font-size: 12px;
+            color: #888;
+            margin-top: 3px;
+        }
+        .match-score {
+            background-color: #1DB954;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .alternatives {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #333;
+            border-radius: 4px;
+        }
+        .alt-song {
+            padding: 8px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .alt-song:hover {
+            background-color: #444;
+        }
+        .alt-song.selected {
+            background-color: rgba(29, 185, 84, 0.3);
+        }
+        .alt-song img {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #282828;
         }
         .loading {
             text-align: center;
@@ -71,54 +143,17 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .song-list, .stats, .status {
-            margin-top: 20px;
-        }
-        .song-card, .alt-song {
-            display: flex;
-            align-items: center;
+        .playlist-name-input {
+            width: 100%;
             padding: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            border: 1px solid #333;
             background-color: #282828;
-            border-radius: 4px;
+            color: #ffffff;
         }
-        .song-card img, .alt-song img {
-            width: 60px;
-            height: 60px;
-            margin-right: 15px;
-            border-radius: 4px;
-        }
-        .song-info {
-            flex-grow: 1;
-        }
-        .song-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .song-artist {
-            color: #b3b3b3;
-            font-size: 14px;
-        }
-        .match-score {
-            background-color: #1DB954;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-            margin-left: 10px;
-        }
-        .alternatives {
-            margin-top: 10px;
-            padding: 10px;
-            background-color: #333;
-            border-radius: 4px;
-        }
-        .alt-song:hover {
-            background-color: #444;
-        }
-        .alt-song.selected {
-            background-color: rgba(29, 185, 84, 0.3);
+        .hidden {
+            display: none;
         }
         .tips {
             background-color: #242424;
@@ -134,6 +169,7 @@
         .stats {
             display: flex;
             justify-content: space-between;
+            margin-top: 15px;
             background-color: #242424;
             padding: 10px;
             border-radius: 4px;
@@ -155,10 +191,12 @@
 <body>
     <div class="container">
         <h1>Spotify Playlist Creator</h1>
+        
         <div id="login-section">
             <p>Connect to your Spotify account to create playlists.</p>
             <button id="login-button">Connect to Spotify</button>
         </div>
+        
         <div id="main-app" class="hidden">
             <div id="input-section">
                 <h2>Enter Your Songs</h2>
@@ -172,14 +210,18 @@
                         <li>Be specific with song titles (e.g., "Radio Edit", "Acoustic Version", etc.)</li>
                     </ul>
                 </div>
-                <textarea id="song-input" placeholder="Taylor Swift - Blank Space\nThe Weeknd - Blinding Lights\nDua Lipa - Levitating"></textarea>
+                <textarea id="song-input" placeholder="Taylor Swift - Blank Space
+The Weeknd - Blinding Lights
+Dua Lipa - Levitating"></textarea>
                 <input type="text" id="playlist-name" class="playlist-name-input" placeholder="Enter playlist name">
                 <button id="search-button">Search Songs</button>
             </div>
+            
             <div id="loading" class="loading hidden">
                 <div class="spinner"></div>
                 <p>Searching for songs...</p>
             </div>
+            
             <div id="preview-section" class="hidden">
                 <h2>Review Your Playlist</h2>
                 <p>We found the following matches (showing matches with 80% or higher confidence):</p>
@@ -202,6 +244,7 @@
                 <button id="create-playlist-button">Create Playlist</button>
                 <button id="back-button">Back to Input</button>
             </div>
+            
             <div id="success-section" class="hidden">
                 <h2>Success!</h2>
                 <p>Your playlist has been created in your Spotify account.</p>
@@ -210,11 +253,14 @@
             </div>
         </div>
     </div>
+
     <script>
+        // Spotify API configuration
         const redirectUri = 'https://jrakwasi.github.io/akwasi/';
         const clientId = '82910fe423f24953a93aa6188fd25c58';
         const scopes = 'playlist-modify-private playlist-modify-public';
-
+        
+        // DOM Elements
         const loginButton = document.getElementById('login-button');
         const loginSection = document.getElementById('login-section');
         const mainApp = document.getElementById('main-app');
@@ -233,4 +279,526 @@
         const playlistLink = document.getElementById('playlist-link');
         const totalSongsElement = document.getElementById('total-songs');
         const matchedSongsElement = document.getElementById('matched-songs');
-        const unmatchedSongsElement = document.getElement
+        const unmatchedSongsElement = document.getElementById('unmatched-songs');
+        
+        // App State
+        let accessToken = null;
+        let userId = null;
+        let searchResults = [];
+        
+        // Check if returning from Spotify auth
+        window.onload = function() {
+            const hash = window.location.hash.substring(1);
+            const params = new URLSearchParams(hash);
+            accessToken = params.get('access_token');
+            
+            if (accessToken) {
+                // Clear the hash from the URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // Show the main app
+                loginSection.classList.add('hidden');
+                mainApp.classList.remove('hidden');
+                
+                // Get user info
+                fetchUserProfile();
+            }
+        };
+        
+        // Event Listeners
+        loginButton.addEventListener('click', authenticateWithSpotify);
+        searchButton.addEventListener('click', searchSongs);
+        createPlaylistButton.addEventListener('click', createPlaylist);
+        backButton.addEventListener('click', goBackToInput);
+        newPlaylistButton.addEventListener('click', resetApp);
+        
+        function authenticateWithSpotify() {
+            const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}`;
+            window.location.href = authUrl;
+        }
+        
+        async function fetchUserProfile() {
+            try {
+                const response = await fetch('https://api.spotify.com/v1/me', {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+                
+                if (response.status === 401) {
+                    // Token expired, need to re-authenticate
+                    showError('Your session has expired. Please log in again.');
+                    loginSection.classList.remove('hidden');
+                    mainApp.classList.add('hidden');
+                    return;
+                }
+                
+                const data = await response.json();
+                userId = data.id;
+            } catch (error) {
+                showError('Failed to fetch user profile. Please try again.');
+                console.error('Error fetching user profile:', error);
+            }
+        }
+        
+        async function searchSongs() {
+            const songLines = songInput.value.trim().split('\n');
+            
+            if (songLines.length === 0 || songLines[0] === '') {
+                showError('Please enter at least one song.');
+                return;
+            }
+            
+            if (!playlistNameInput.value.trim()) {
+                showError('Please enter a playlist name.');
+                return;
+            }
+            
+            // Show loading state
+            loadingSection.classList.remove('hidden');
+            inputSection.classList.add('hidden');
+            searchResults = [];
+            
+            try {
+                for (const line of songLines) {
+                    if (line.trim() === '') continue;
+                    
+                    // Default values
+                    let artist = '';
+                    let title = '';
+                    
+                    // Parse the input line
+                    if (line.includes(' - ')) {
+                        [artist, title] = line.split(' - ', 2).map(part => part.trim());
+                    } else {
+                        // Try to make a best guess if not in expected format
+                        const parts = line.split(' ');
+                        if (parts.length > 1) {
+                            // Assume first part is artist and rest is title
+                            artist = parts[0];
+                            title = parts.slice(1).join(' ');
+                        } else {
+                            // Just use the whole line for both
+                            artist = title = line;
+                        }
+                    }
+                    
+                    // Step 1: First search for the artist
+                    const artistSearchResponse = await fetch(
+                        `https://api.spotify.com/v1/search?q=${encodeURIComponent(artist)}&type=artist&limit=3`, {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`
+                        }
+                    });
+                    
+                    if (!artistSearchResponse.ok) {
+                        throw new Error(`Artist search failed with status ${artistSearchResponse.status}`);
+                    }
+                    
+                    const artistData = await artistSearchResponse.json();
+                    let foundTracks = [];
+                    
+                    // Step 2: If we found artists, search for tracks by those artists
+                    if (artistData.artists.items.length > 0) {
+                        // Get the top 3 artist matches
+                        const potentialArtists = artistData.artists.items.slice(0, 3);
+                        
+                        for (const potentialArtist of potentialArtists) {
+                            // Try to find the track by this artist
+                            const trackSearchResponse = await fetch(
+                                `https://api.spotify.com/v1/search?q=artist:"${encodeURIComponent(potentialArtist.name)}" track:${encodeURIComponent(title)}&type=track&limit=5`, {
+                                headers: {
+                                    'Authorization': `Bearer ${accessToken}`
+                                }
+                            });
+                            
+                            if (!trackSearchResponse.ok) {
+                                continue; // Skip if this search fails
+                            }
+                            
+                            const trackData = await trackSearchResponse.json();
+                            
+                            if (trackData.tracks.items.length > 0) {
+                                // Calculate similarity scores
+                                const matches = trackData.tracks.items.map(track => {
+                                    const originalText = line.toLowerCase();
+                                    const trackText = `${track.artists[0].name} - ${track.name}`.toLowerCase();
+                                    
+                                    // Improved similarity calculation
+                                    const artistSimilarity = calculateSimilarity(artist.toLowerCase(), track.artists[0].name.toLowerCase());
+                                    const titleSimilarity = calculateSimilarity(title.toLowerCase(), track.name.toLowerCase());
+                                    
+                                    // Weight artist and title similarity
+                                    const score = (artistSimilarity * 0.4) + (titleSimilarity * 0.6);
+                                    
+                                    return {
+                                        track,
+                                        score,
+                                        selected: score >= 80, // Lower the threshold to 80%
+                                        originalQuery: line
+                                    };
+                                });
+                                
+                                foundTracks = foundTracks.concat(matches);
+                            }
+                        }
+                    }
+                    
+                    // If no tracks found with artist-first approach, try the original search as fallback
+                    if (foundTracks.length === 0) {
+                        // Fallback search
+                        const fallbackResponse = await fetch(
+                            `https://api.spotify.com/v1/search?q=${encodeURIComponent(line)}&type=track&limit=5`, {
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`
+                            }
+                        });
+                        
+                        if (fallbackResponse.ok) {
+                            const data = await fallbackResponse.json();
+                            
+                            if (data.tracks.items.length > 0) {
+                                const matches = data.tracks.items.map(track => {
+                                    const originalText = line.toLowerCase();
+                                    const trackText = `${track.artists[0].name} - ${track.name}`.toLowerCase();
+                                    const score = calculateSimilarity(originalText, trackText);
+                                    
+                                    return {
+                                        track,
+                                        score,
+                                        selected: score >= 80, // Lower threshold
+                                        originalQuery: line
+                                    };
+                                });
+                                
+                                foundTracks = foundTracks.concat(matches);
+                            }
+                        }
+                    }
+                    
+                    // Sort all found tracks by score
+                    foundTracks.sort((a, b) => b.score - a.score);
+                    
+                    // Add unique tracks to results (remove duplicates)
+                    const uniqueTracks = [];
+                    const trackIds = new Set();
+                    
+                    for (const track of foundTracks) {
+                        if (!trackIds.has(track.track.id)) {
+                            trackIds.add(track.track.id);
+                            uniqueTracks.push(track);
+                        }
+                    }
+                    
+                    // Add to search results
+                    searchResults.push({
+                        originalQuery: line,
+                        matches: uniqueTracks
+                    });
+                }
+                
+                // Hide loading and show preview
+                loadingSection.classList.add('hidden');
+                renderPreview();
+                previewSection.classList.remove('hidden');
+                
+            } catch (error) {
+                loadingSection.classList.add('hidden');
+                inputSection.classList.remove('hidden');
+                showError('Error searching for songs. Please try again.');
+                console.error('Search error:', error);
+            }
+        }
+        
+        // Improved similarity calculation function
+        function calculateSimilarity(str1, str2) {
+            // Normalize strings - remove special characters and extra spaces
+            str1 = str1.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, ' ').trim();
+            str2 = str2.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, ' ').trim();
+            
+            // If one is a substring of the other, that's a strong signal
+            if (str1.includes(str2) || str2.includes(str1)) {
+                return 95;
+            }
+            
+            // Check for exact word matches
+            const words1 = str1.split(' ');
+            const words2 = str2.split(' ');
+            
+            let wordMatches = 0;
+            for (const word1 of words1) {
+                if (word1.length > 2 && words2.some(word2 => word2.includes(word1) || word1.includes(word2))) {
+                    wordMatches++;
+                }
+            }
+            
+            const wordMatchScore = words1.length > 0 ? (wordMatches / words1.length) * 100 : 0;
+            
+            // Character-based similarity (Jaccard similarity)
+            const set1 = new Set(str1.split(''));
+            const set2 = new Set(str2.split(''));
+            
+            const intersection = new Set([...set1].filter(x => set2.has(x)));
+            const union = new Set([...set1, ...set2]);
+            
+            const characterScore = (intersection.size / union.size) * 100;
+            
+            // Weight word matches higher than character matches
+            return Math.round((wordMatchScore * 0.7) + (characterScore * 0.3));
+        }
+        
+        function renderPreview() {
+            songList.innerHTML = '';
+            let hasValidSongs = false;
+            
+            let totalSongs = searchResults.length;
+            let matchedSongs = 0;
+            let unmatchedSongs = 0;
+            
+            searchResults.forEach((result, resultIndex) => {
+                if (result.matches.length === 0) {
+                    unmatchedSongs++;
+                    const noMatchEl = document.createElement('div');
+                    noMatchEl.className = 'song-card';
+                    noMatchEl.innerHTML = `
+                        <div class="song-info">
+                            <div class="song-title">No matches found</div>
+                            <div class="song-artist">Original query: "${result.originalQuery}"</div>
+                        </div>
+                    `;
+                    songList.appendChild(noMatchEl);
+                    return;
+                }
+                
+                // Find best match (highest score)
+                const bestMatch = result.matches[0];
+                
+                // Lower the threshold to 80% for accepting matches
+                if (bestMatch.score < 80) {
+                    unmatchedSongs++;
+                    const lowMatchEl = document.createElement('div');
+                    lowMatchEl.className = 'song-card';
+                    lowMatchEl.innerHTML = `
+                        <div class="song-info">
+                            <div class="song-title">No good matches found (best match below 80%)</div>
+                            <div class="song-artist">Original query: "${result.originalQuery}"</div>
+                        </div>
+                    `;
+                    songList.appendChild(lowMatchEl);
+                    return;
+                }
+                
+                matchedSongs++;
+                hasValidSongs = true;
+                const track = bestMatch.track;
+                
+                // Create song card
+                const songCard = document.createElement('div');
+                songCard.className = 'song-card';
+                
+                const albumImage = track.album.images.length > 0 ? track.album.images[track.album.images.length - 1].url : '';
+                
+                songCard.innerHTML = `
+                    <img src="${albumImage}" alt="${track.name} album art">
+                    <div class="song-info">
+                        <div class="song-title">${track.name}</div>
+                        <div class="song-artist">${track.artists.map(a => a.name).join(', ')}</div>
+                        <div class="song-query">Original: "${result.originalQuery}"</div>
+                    </div>
+                    <div class="match-score">${Math.round(bestMatch.score)}%</div>
+                `;
+                
+                // Show alternatives with a lower threshold (70%)
+                const goodAlternatives = result.matches.filter(match => match.score >= 70 && match !== bestMatch);
+                
+                if (goodAlternatives.length > 0) {
+                    const alternatives = document.createElement('div');
+                    alternatives.className = 'alternatives';
+                    alternatives.innerHTML = '<div>Alternative matches:</div>';
+                    
+                    // Add the best match as the selected option
+                    const bestMatchEl = document.createElement('div');
+                    bestMatchEl.className = 'alt-song selected';
+                    bestMatchEl.dataset.index = 0;
+                    bestMatchEl.dataset.resultIndex = resultIndex;
+                    
+                    const bestMatchImage = track.album.images.length > 0 ? track.album.images[track.album.images.length - 1].url : '';
+                    
+                    bestMatchEl.innerHTML = `
+                        <img src="${bestMatchImage}" alt="${track.name} album art">
+                        <div class="song-info">
+                            <div class="song-title">${track.name}</div>
+                            <div class="song-artist">${track.artists.map(a => a.name).join(', ')}</div>
+                        </div>
+                        <div class="match-score">${Math.round(bestMatch.score)}%</div>
+                    `;
+                    
+                    bestMatchEl.addEventListener('click', function() {
+                        selectAlternative(this);
+                    });
+                    
+                    alternatives.appendChild(bestMatchEl);
+                    
+                    // Add other alternatives (limited to top 3)
+                    goodAlternatives.slice(0, 3).forEach((alt, altIndex) => {
+                        const altTrack = alt.track;
+                        const altEl = document.createElement('div');
+                        altEl.className = 'alt-song';
+                        altEl.dataset.index = altIndex + 1;
+                        altEl.dataset.resultIndex = resultIndex;
+                        
+                        const altImage = altTrack.album.images.length > 0 ? altTrack.album.images[altTrack.album.images.length - 1].url : '';
+                        
+                        altEl.innerHTML = `
+                            <img src="${altImage}" alt="${altTrack.name} album art">
+                            <div class="song-info">
+                                <div class="song-title">${altTrack.name}</div>
+                                <div class="song-artist">${altTrack.artists.map(a => a.name).join(', ')}</div>
+                            </div>
+                            <div class="match-score">${Math.round(alt.score)}%</div>
+                        `;
+                        
+                        altEl.addEventListener('click', function() {
+                            selectAlternative(this);
+                        });
+                        
+                        alternatives.appendChild(altEl);
+                    });
+                    
+                    songCard.appendChild(alternatives);
+                }
+                
+                songList.appendChild(songCard);
+            });
+            
+            // Update stats
+            totalSongsElement.textContent = totalSongs;
+            matchedSongsElement.textContent = matchedSongs;
+            unmatchedSongsElement.textContent = unmatchedSongs;
+            
+            // Update status based on whether we have valid songs
+            if (hasValidSongs) {
+                createPlaylistButton.disabled = false;
+                statusMessage.textContent = 'Ready to create playlist. Review and select alternatives if needed.';
+                statusMessage.style.color = '#1DB954';
+            } else {
+                createPlaylistButton.disabled = true;
+                statusMessage.textContent = 'No songs with good matches found. Please try different songs or adjust your input format.';
+                statusMessage.style.color = '#ff5050';
+            }
+        }
+        
+        function selectAlternative(element) {
+            const resultIndex = element.dataset.resultIndex;
+            const matchIndex = element.dataset.index;
+            
+            // Update the selection in the data
+            const result = searchResults[resultIndex];
+            
+            // Deselect all matches for this result
+            result.matches.forEach(match => match.selected = false);
+            
+            // Select this match
+            result.matches[matchIndex].selected = true;
+            
+            // Update the UI
+            const alternatives = element.parentElement;
+            const allAlts = alternatives.querySelectorAll('.alt-song');
+            
+            allAlts.forEach(alt => {
+                alt.classList.remove('selected');
+            });
+            
+            element.classList.add('selected');
+        }
+        
+        async function createPlaylist() {
+            // Disable button and show loading
+            createPlaylistButton.disabled = true;
+            statusMessage.textContent = 'Creating playlist...';
+            statusMessage.style.color = '#ffffff';
+            
+            try {
+                // 1. Create a new playlist
+                const playlistName = playlistNameInput.value.trim();
+                
+                const createResponse = await fetch(`https://api.spotify.com/v1/users/${userId}/playlists`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: playlistName,
+                        description: 'Created with Spotify Playlist Creator',
+                        public: false
+                    })
+                });
+                
+                if (!createResponse.ok) {
+                    throw new Error(`Failed to create playlist: ${createResponse.status}`);
+                }
+                
+                const playlist = await createResponse.json();
+                
+                // 2. Collect all selected tracks
+                const trackUris = [];
+                const skippedTracks = [];
+                
+                searchResults.forEach(result => {
+                    // Lower the threshold to 80%
+                    const selectedMatch = result.matches.find(match => match.selected && match.score >= 80);
+                    
+                    if (selectedMatch) {
+                        trackUris.push(selectedMatch.track.uri);
+                    } else if (result.matches.length > 0) {
+                        skippedTracks.push(result.originalQuery);
+                    } else {
+                        skippedTracks.push(result.originalQuery);
+                    }
+                });
+                
+                if (trackUris.length === 0) {
+                    statusMessage.textContent = 'No valid tracks selected.';
+                    statusMessage.style.color = '#ff5050';
+                    createPlaylistButton.disabled = false;
+                    return;
+                }
+                
+                // 3. Add tracks to the playlist
+                const addTracksResponse = await fetch(`https://api.spotify.com/v1/playlists/${playlist.id}/tracks`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        uris: trackUris
+                    })
+                });
+                
+                if (!addTracksResponse.ok) {
+                    throw new Error(`Failed to add tracks: ${addTracksResponse.status}`);
+                }
+                
+                // 4. Show success
+                previewSection.classList.add('hidden');
+                successSection.classList.remove('hidden');
+                
+                // Add link to the playlist
+                let additionalInfo = '';
+                if (skippedTracks.length > 0) {
+                    additionalInfo = `
+                        <p>Note: ${skippedTracks.length} songs were not added because no good matches were found:</p>
+                        <ul style="color: #b3b3b3; font-size: 14px;">
+                            ${skippedTracks.slice(0, 5).map(track => `<li>${track}</li>`).join('')}
+                            ${skippedTracks.length > 5 ? `<li>...and ${skippedTracks.length - 5} more</li>` : ''}
+                        </ul>
+                        <p>Tip: Try to use "Artist - Song Title" format for better matching.</p>
+                    `;
+                }
+                
+                playlistLink.innerHTML = `
+                    <p>Your playlist "<strong>${playlistName}</strong>" has been created with ${trackUris.length} tracks.</p>
+                    ${additionalInfo}
+                    <p><a href="${playlist.external
