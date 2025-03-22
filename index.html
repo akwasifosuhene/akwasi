@@ -1,93 +1,96 @@
-import React, { useState, useEffect } from "react";
-import { Button, Input, Card, CardContent } from "./components/ui"; // Ensure this file exists in the correct directory
+import React, { useState } from 'react';
+import { Button, Input, Card, CardContent } from '@/components/ui';
 
-const CLIENT_ID = "82910fe423f24953a93aa6188fd25c58";
-const REDIRECT_URI = "https://jrakwasi.github.io/akwasi/";
-const SCOPES = "playlist-modify-private playlist-modify-public";
+const redirectUri = 'https://jrakwasi.github.io/akwasi/';
+const clientId = '82910fe423f24953a93aa6188fd25c58';
+const authEndpoint = 'https://accounts.spotify.com/authorize';
+const scopes = ['playlist-modify-public', 'playlist-modify-private'];
+const apiUrl = 'https://api.spotify.com/v1';
 
 export default function SpotifyPlaylistCreator() {
-  const [songs, setSongs] = useState("");
+  const [songs, setSongs] = useState('');
+  const [matchedSongs, setMatchedSongs] = useState([]);
+  const [selectedSongs, setSelectedSongs] = useState([]);
   const [token, setToken] = useState(null);
-  
-  const authenticateSpotify = () => {
-    const authUrl = `https://accounts.spotify.com/authorize?client_id=${CLIENT_ID}&response_type=token&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${encodeURIComponent(SCOPES)}`;
+
+  const authenticate = () => {
+    const authUrl = `${authEndpoint}?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scopes.join('%20')}&response_type=token&show_dialog=true`;
     window.location.href = authUrl;
   };
 
-  useEffect(() => {
-    const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
-    const accessToken = params.get("access_token");
-    if (accessToken) {
-      setToken(accessToken);
-      window.history.pushState({}, null, window.location.pathname);
+  const searchSongs = async () => {
+    if (!token) return alert('Please authenticate first.');
+    const songList = songs.split('\n');
+    let matched = [];
+    
+    for (let song of songList) {
+      const response = await fetch(`${apiUrl}/search?q=${encodeURIComponent(song)}&type=track`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
+      if (data.tracks && data.tracks.items.length > 0) {
+        matched.push({ input: song, options: data.tracks.items.slice(0, 3) });
+      }
     }
-  }, []);
+    setMatchedSongs(matched);
+  };
 
   const createPlaylist = async () => {
-    if (!token) return alert("Please authenticate first!");
-    const songList = songs.split("\n").map(song => song.trim()).filter(song => song);
-    if (songList.length === 0) return alert("No songs provided!");
+    if (!token || selectedSongs.length === 0) return;
     
-    try {
-      const userResponse = await fetch("https://api.spotify.com/v1/me", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const userData = await userResponse.json();
-      if (!userData.id) throw new Error("Failed to fetch user ID");
-      const userId = userData.id;
-      
-      const playlistResponse = await fetch(`https://api.spotify.com/v1/users/${userId}/playlists`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ name: "My Generated Playlist", public: false })
-      });
-      const playlistData = await playlistResponse.json();
-      if (!playlistData.id) throw new Error("Failed to create playlist");
-      const playlistId = playlistData.id;
-      
-      const uris = [];
-      for (const song of songList) {
-        const searchResponse = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(song)}&type=track&limit=1`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const searchData = await searchResponse.json();
-        const track = searchData.tracks?.items?.[0];
-        if (track) uris.push(track.uri);
-      }
-      
-      if (uris.length === 0) return alert("No valid songs found!");
-      
-      await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ uris })
-      });
-      alert("Playlist created successfully!");
-    } catch (error) {
-      console.error("Error creating playlist:", error);
-      alert(`An error occurred: ${error.message}`);
-    }
+    const userResponse = await fetch(`${apiUrl}/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const userData = await userResponse.json();
+    
+    const playlistResponse = await fetch(`${apiUrl}/users/${userData.id}/playlists`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ name: 'Generated Playlist', public: true }),
+    });
+    const playlistData = await playlistResponse.json();
+    
+    await fetch(`${apiUrl}/playlists/${playlistData.id}/tracks`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ uris: selectedSongs }),
+    });
+    alert('Playlist created successfully!');
   };
-  
+
   return (
-    <Card className="p-4">
-      <CardContent>
-        <h2 className="text-xl font-bold mb-2">Spotify Playlist Creator</h2>
-        {!token ? (
-          <Button onClick={authenticateSpotify}>Login with Spotify</Button>
-        ) : (
-          <>
-            <Input
-              placeholder="Paste your songs (one per line)"
-              value={songs}
-              onChange={(e) => setSongs(e.target.value)}
-              className="w-full p-2 border rounded mb-2"
-            />
-            <Button onClick={createPlaylist}>Create Playlist</Button>
-          </>
-        )}
-      </CardContent>
-    </Card>
+    <div className="p-4 max-w-lg mx-auto">
+      <Button onClick={authenticate} className="mb-4">Authenticate with Spotify</Button>
+      <Input
+        placeholder="Enter songs, one per line"
+        value={songs}
+        onChange={(e) => setSongs(e.target.value)}
+        className="w-full mb-4"
+        multiline
+      />
+      <Button onClick={searchSongs} className="mb-4">Generate Preview</Button>
+      <div>
+        {matchedSongs.map((match, index) => (
+          <Card key={index} className="mb-4">
+            <CardContent>
+              <p>Input: {match.input}</p>
+              {match.options.map((track, i) => (
+                <div key={i} className="flex items-center justify-between p-2 border rounded">
+                  <p>{track.name} - {track.artists.map(a => a.name).join(', ')}</p>
+                  <Button onClick={() => setSelectedSongs([...selectedSongs, track.uri])}>Select</Button>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      <Button onClick={createPlaylist} className="mt-4">Create Playlist</Button>
+    </div>
   );
 }
