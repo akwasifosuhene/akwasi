@@ -209,6 +209,7 @@ Dua Lipa - Levitating"></textarea>
         const playlistNameInput = document.getElementById('playlist-name');
         const searchButton = document.getElementById('search-button');
         const loadingSection = document.getElementById('loading');
+        const inputSection = document.getElementById('input-section');
         const previewSection = document.getElementById('preview-section');
         const songList = document.getElementById('song-list');
         const createPlaylistButton = document.getElementById('create-playlist-button');
@@ -637,7 +638,6 @@ Dua Lipa - Levitating"></textarea>
         function showError(message) {
             statusMessage.textContent = message;
             statusMessage.style.color = '#ff5050';
-            statusMessage.classList.remove('hidden');
         }
     </script>
 </body>
