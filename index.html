@@ -3,25 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spotify Playlist Generator</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        input, button {
-            margin: 10px 0;
-        }
-    </style>
+    <title>Spotify Playlist Creator</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Spotify Playlist Generator</h1>
-    <form id="songForm">
-        <label for="songs">Enter songs (comma-separated):</label><br>
-        <input type="text" id="songs" name="songs" required><br>
-        <button type="button" onclick="generatePlaylist()">Generate Playlist</button>
-    </form>
-    <div id="preview"></div>
-    <script src="script.js"></script>
+    <div class="container">
+        <h1>Spotify Playlist Creator</h1>
+        <div id="login-section">
+            <p>Connect to your Spotify account to create playlists.</p>
+            <button id="login-button">Connect to Spotify</button>
+        </div>
+        <div id="main-app" class="hidden">
+            <h2>Enter Your Songs</h2>
+            <textarea id="song-input" placeholder="Artist - Song Title\nExample: Taylor Swift - Blank Space"></textarea>
+            <input type="text" id="playlist-name" placeholder="Enter playlist name">
+            <button id="search-button">Search Songs</button>
+            <div id="loading" class="hidden">Loading...</div>
+            <div id="preview-section" class="hidden">
+                <h2>Review Your Playlist</h2>
+                <div id="song-list"></div>
+                <button id="create-playlist-button">Create Playlist</button>
+            </div>
+            <div id="success-section" class="hidden">
+                <h2>Playlist Created!</h2>
+                <div id="playlist-link"></div>
+                <button id="new-playlist-button">Create Another</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const clientId = 'YOUR_SPOTIFY_CLIENT_ID';
+        const redirectUri = 'YOUR_REDIRECT_URI';
+        let accessToken = null;
+
+        document.getElementById('login-button').addEventListener('click', () => {
+            const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=playlist-modify-private playlist-modify-public`;
+            window.location.href = authUrl;
+        });
+
+        async function searchSongs() {
+            const songLines = document.getElementById('song-input').value.trim().split('\n');
+            if (!songLines.length) return alert('Enter at least one song.');
+
+            document.getElementById('loading').classList.remove('hidden');
+            let searchResults = [];
+            
+            for (const line of songLines) {
+                let [artist, title] = line.split(' - ').map(str => str.trim());
+                if (!artist || !title) continue;
+                
+                const artistRes = await fetch(`https://api.spotify.com/v1/search?q=artist:${encodeURIComponent(artist)}&type=artist&limit=5`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                const artistData = await artistRes.json();
+                if (!artistData.artists.items.length) continue;
+                
+                const bestArtist = artistData.artists.items[0].name;
+                const trackRes = await fetch(`https://api.spotify.com/v1/search?q=artist:${encodeURIComponent(bestArtist)} track:${encodeURIComponent(title)}&type=track&limit=5`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                const trackData = await trackRes.json();
+                
+                if (!trackData.tracks.items.length) continue;
+                searchResults.push(trackData.tracks.items[0]);
+            }
+
+            document.getElementById('loading').classList.add('hidden');
+            renderResults(searchResults);
+        }
+
+        function renderResults(tracks) {
+            const songList = document.getElementById('song-list');
+            songList.innerHTML = '';
+            tracks.forEach(track => {
+                const div = document.createElement('div');
+                div.innerHTML = `<p>${track.artists[0].name} - ${track.name}</p>`;
+                songList.appendChild(div);
+            });
+            document.getElementById('preview-section').classList.remove('hidden');
+        }
+    </script>
 </body>
 </html>
