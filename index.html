@@ -45,6 +45,19 @@
             color: #fff;
             box-sizing: border-box;
         }
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #333;
+            color: #fff;
+            box-sizing: border-box;
+            resize: vertical;
+            font-family: inherit;
+            font-size: 1em;
+        }
         button {
             background-color: #1db954;
             color: white;
@@ -134,6 +147,11 @@
             padding: 15px 30px;
             font-size: 18px;
         }
+        .song-help {
+            color: #b3b3b3;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -158,9 +176,10 @@
         
         <!-- Song Input Form -->
         <div class="form-group">
-            <label for="songInput">Add Song:</label>
-            <input type="text" id="songInput" placeholder="Enter artist and song (e.g., 'Adele Hello')">
-            <button id="addSongBtn">Add Song</button>
+            <label for="songInput">Add Songs:</label>
+            <textarea id="songInput" placeholder="Enter one song per line (e.g., 'Adele Hello')"></textarea>
+            <p class="song-help">Enter one song per line. Format: Artist - Song Title (or just type song names)</p>
+            <button id="addSongsBtn">Add Songs</button>
         </div>
         
         <!-- Song Search Preview Section -->
@@ -203,7 +222,7 @@
         const loginButton = document.getElementById('login-button');
         const playlistTitleInput = document.getElementById('playlistTitle');
         const songInput = document.getElementById('songInput');
-        const addSongBtn = document.getElementById('addSongBtn');
+        const addSongsBtn = document.getElementById('addSongsBtn');
         const searchPreview = document.getElementById('searchPreview');
         const searchResults = document.getElementById('searchResults');
         const selectedSongs = document.getElementById('selectedSongs');
@@ -215,6 +234,8 @@
         let accessToken = null;
         let userId = null;
         let selectedTracks = [];
+        let searchQueue = [];
+        let isProcessingQueue = false;
         
         // Function to parse query parameters from URL
         function getHashParams() {
@@ -281,7 +302,6 @@
         }
         
         // Function to analyze song input using AI-like heuristics
-        // (Since we can't directly use Claude in client-side JavaScript, we'll use a simple parsing approach)
         function analyzeSongInput(input) {
             // Simple heuristic to separate artist and song
             // This would be replaced by a Claude API call in a full implementation
@@ -316,31 +336,68 @@
             };
         }
         
-        // Function to add a song to the playlist
-        addSongBtn.addEventListener('click', async () => {
-            const input = songInput.value.trim();
-            if (!input) return;
+        // Function to process multiple songs
+        addSongsBtn.addEventListener('click', () => {
+            const inputText = songInput.value.trim();
+            if (!inputText) return;
+            
+            // Split by new lines
+            const songLines = inputText.split('\n').filter(line => line.trim() !== '');
+            
+            if (songLines.length > 0) {
+                // Add all songs to the search queue
+                searchQueue = [...searchQueue, ...songLines];
+                
+                // Start processing if not already running
+                if (!isProcessingQueue) {
+                    processNextSong();
+                }
+                
+                // Clear the input area
+                songInput.value = '';
+            }
+        });
+        
+        // Function to process the next song in the queue
+        async function processNextSong() {
+            if (searchQueue.length === 0) {
+                isProcessingQueue = false;
+                return;
+            }
+            
+            isProcessingQueue = true;
+            
+            // Get the next song input
+            const songInput = searchQueue.shift();
             
             // Analyze input to extract artist and song
-            const analysis = analyzeSongInput(input);
+            const analysis = analyzeSongInput(songInput);
             
             // Search for songs
-            const searchResults = await searchSongs(analysis.searchQuery);
+            const results = await searchSongs(analysis.searchQuery);
             
             // Display search results
-            displaySearchResults(searchResults);
-            
-            // Clear input
-            songInput.value = '';
-        });
+            displaySearchResults(results);
+        }
         
         // Function to display search results
         function displaySearchResults(results) {
             searchResults.innerHTML = '';
             
             if (results.length === 0) {
-                searchResults.innerHTML = '<p>No songs found. Try a different search.</p>';
+                searchResults.innerHTML = '<p>No songs found for this search. Continuing to the next song...</p>';
+                
+                // Continue to the next song after a brief delay
+                setTimeout(() => {
+                    processNextSong();
+                }, 1500);
             } else {
+                // Create a title showing what we're searching for
+                const titleElement = document.createElement('h4');
+                titleElement.textContent = 'Select a match for this song:';
+                searchResults.appendChild(titleElement);
+                
+                // Show the top matches
                 results.forEach(track => {
                     const previewDiv = document.createElement('div');
                     previewDiv.className = 'preview-container';
@@ -361,13 +418,29 @@
                                 data-artist-name="${track.artists[0].name}"
                                 data-album-img="${albumImg}"
                                 data-uri="${track.uri}">
-                                Add to Playlist
+                                Add
                             </button>
                         </div>
                     `;
                     
                     searchResults.appendChild(previewDiv);
                 });
+                
+                // Add a skip button
+                const skipDiv = document.createElement('div');
+                skipDiv.style.textAlign = 'center';
+                skipDiv.style.marginTop = '10px';
+                
+                const skipButton = document.createElement('button');
+                skipButton.textContent = 'Skip this song';
+                skipButton.className = 'remove';
+                skipButton.addEventListener('click', () => {
+                    searchResults.innerHTML = '';
+                    processNextSong();
+                });
+                
+                skipDiv.appendChild(skipButton);
+                searchResults.appendChild(skipDiv);
                 
                 // Add event listeners to the add buttons
                 document.querySelectorAll('.add-to-playlist').forEach(button => {
@@ -382,8 +455,9 @@
                         
                         addTrackToSelection(trackInfo);
                         
-                        // Clear search results
+                        // Clear search results and process next song
                         searchResults.innerHTML = '';
+                        processNextSong();
                     });
                 });
             }
