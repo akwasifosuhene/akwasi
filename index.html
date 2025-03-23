@@ -147,13 +147,6 @@
             margin-bottom: 8px;
         }
         
-        .preview-song-item img {
-            width: 50px;
-            height: 50px;
-            margin-right: 15px;
-            border-radius: 4px;
-        }
-        
         .preview-song-info {
             flex-grow: 1;
         }
@@ -195,6 +188,41 @@
         }
         
         .tab-content.active {
+            display: block;
+        }
+        
+        .song-group {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+        }
+        
+        .song-group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #1DB954;
+            font-weight: bold;
+        }
+        
+        .toggle-alternatives {
+            background-color: #333;
+            color: #ccc;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        
+        .alternatives-container {
+            display: none;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #555;
+        }
+        
+        .alternatives-container.show {
             display: block;
         }
     </style>
@@ -285,7 +313,7 @@ Dua Lipa - Don't Start Now"></textarea>
         let accessToken = '';
         let userId = '';
         let songs = [];
-        let searchResults = [];
+        let searchResults = {};  // Changed to object with query as key
         
         // DOM Elements
         const loginPage = document.getElementById('loginPage');
@@ -413,11 +441,16 @@ Dua Lipa - Don't Start Now"></textarea>
             // Wait for all searches to complete
             Promise.allSettled(promises)
                 .then(results => {
-                    // Filter successful results and flatten
-                    searchResults = results
-                        .filter(result => result.status === 'fulfilled' && result.value.length > 0)
-                        .map(result => result.value)
-                        .flat();
+                    // Reset search results
+                    searchResults = {};
+                    
+                    // Process results
+                    results.forEach((result, index) => {
+                        if (result.status === 'fulfilled' && result.value.tracks.length > 0) {
+                            const query = lines[index];
+                            searchResults[query] = result.value;
+                        }
+                    });
                     
                     // Show previews
                     renderSearchResults();
@@ -439,8 +472,11 @@ Dua Lipa - Don't Start Now"></textarea>
             
             try {
                 // Search Spotify
-                const results = await searchSpotify(input);
-                searchResults = results;
+                const result = await searchSpotify(input);
+                
+                // Store results
+                searchResults = {};
+                searchResults[input] = result;
                 
                 // Show results
                 renderSearchResults();
@@ -497,7 +533,7 @@ Dua Lipa - Don't Start Now"></textarea>
             const data = await response.json();
             
             // Process results
-            return data.tracks.items.map(track => ({
+            const tracks = data.tracks.items.map((track, index) => ({
                 id: track.id,
                 name: track.name,
                 artist: track.artists.map(a => a.name).join(', '),
@@ -506,12 +542,20 @@ Dua Lipa - Don't Start Now"></textarea>
                 preview_url: track.preview_url,
                 uri: track.uri,
                 originalQuery: query,
-                selected: true
+                // Only select the first result by default
+                selected: index === 0
             }));
+            
+            return {
+                extractedInfo,
+                tracks
+            };
         }
         
         function renderSearchResults() {
-            if (searchResults.length === 0) {
+            const queries = Object.keys(searchResults);
+            
+            if (queries.length === 0) {
                 songPreviewContainer.style.display = 'none';
                 return;
             }
@@ -519,58 +563,123 @@ Dua Lipa - Don't Start Now"></textarea>
             songPreviewContainer.style.display = 'block';
             songPreviews.innerHTML = '';
             
-            searchResults.forEach((track, index) => {
-                const trackElement = document.createElement('div');
-                trackElement.className = 'preview-song-item';
+            queries.forEach(query => {
+                const result = searchResults[query];
+                if (!result || !result.tracks || result.tracks.length === 0) return;
                 
-                // Image
-                const img = document.createElement('img');
-                img.src = track.image || '/api/placeholder/50/50';
-                img.alt = `${track.name} album cover`;
+                // Create a group for this query
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'song-group';
                 
-                // Info
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'preview-song-info';
-                infoDiv.innerHTML = `
-                    <strong>${track.name}</strong><br>
-                    <span>${track.artist}</span><br>
-                    <small>${track.album}</small>
-                `;
+                // Add header with original query
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'song-group-header';
+                headerDiv.innerHTML = `<span>Results for: "${query}"</span>`;
                 
-                // Actions
-                const actionsDiv = document.createElement('div');
-                actionsDiv.className = 'preview-song-actions';
-                
-                // Audio preview
-                if (track.preview_url) {
-                    const audio = document.createElement('audio');
-                    audio.className = 'audio-player';
-                    audio.controls = true;
-                    audio.src = track.preview_url;
-                    actionsDiv.appendChild(audio);
+                // If we have alternatives, add a toggle button
+                if (result.tracks.length > 1) {
+                    const toggleButton = document.createElement('button');
+                    toggleButton.className = 'toggle-alternatives';
+                    toggleButton.textContent = 'Show alternatives';
+                    toggleButton.addEventListener('click', function() {
+                        const container = this.parentNode.parentNode.querySelector('.alternatives-container');
+                        if (container.classList.contains('show')) {
+                            container.classList.remove('show');
+                            this.textContent = 'Show alternatives';
+                        } else {
+                            container.classList.add('show');
+                            this.textContent = 'Hide alternatives';
+                        }
+                    });
+                    headerDiv.appendChild(toggleButton);
                 }
                 
-                // Add/Remove toggle button
-                const toggleButton = document.createElement('button');
-                toggleButton.textContent = track.selected ? 'Remove' : 'Add';
-                toggleButton.style.backgroundColor = track.selected ? '#E61E32' : '#1DB954';
-                toggleButton.addEventListener('click', () => {
-                    track.selected = !track.selected;
-                    toggleButton.textContent = track.selected ? 'Remove' : 'Add';
-                    toggleButton.style.backgroundColor = track.selected ? '#E61E32' : '#1DB954';
-                });
-                actionsDiv.appendChild(toggleButton);
+                groupDiv.appendChild(headerDiv);
                 
-                // Assemble
-                trackElement.appendChild(img);
-                trackElement.appendChild(infoDiv);
-                trackElement.appendChild(actionsDiv);
-                songPreviews.appendChild(trackElement);
+                // Add the primary (first) result
+                const primaryTrack = result.tracks[0];
+                const primaryElement = createTrackElement(primaryTrack);
+                groupDiv.appendChild(primaryElement);
+                
+                // Add alternatives container
+                if (result.tracks.length > 1) {
+                    const alternativesDiv = document.createElement('div');
+                    alternativesDiv.className = 'alternatives-container';
+                    
+                    // Add alternative tracks
+                    for (let i = 1; i < result.tracks.length; i++) {
+                        const track = result.tracks[i];
+                        const trackElement = createTrackElement(track);
+                        alternativesDiv.appendChild(trackElement);
+                    }
+                    
+                    groupDiv.appendChild(alternativesDiv);
+                }
+                
+                songPreviews.appendChild(groupDiv);
             });
         }
         
+        function createTrackElement(track) {
+            const trackElement = document.createElement('div');
+            trackElement.className = 'preview-song-item';
+            
+            // Image
+            const img = document.createElement('img');
+            img.src = track.image || '/api/placeholder/50/50';
+            img.alt = `${track.name} album cover`;
+            
+            // Info
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'preview-song-info';
+            infoDiv.innerHTML = `
+                <strong>${track.name}</strong><br>
+                <span>${track.artist}</span><br>
+                <small>${track.album}</small>
+            `;
+            
+            // Actions
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'preview-song-actions';
+            
+            // Audio preview
+            if (track.preview_url) {
+                const audio = document.createElement('audio');
+                audio.className = 'audio-player';
+                audio.controls = true;
+                audio.src = track.preview_url;
+                actionsDiv.appendChild(audio);
+            }
+            
+            // Add/Remove toggle button
+            const toggleButton = document.createElement('button');
+            toggleButton.textContent = track.selected ? 'Remove' : 'Add';
+            toggleButton.style.backgroundColor = track.selected ? '#E61E32' : '#1DB954';
+            toggleButton.addEventListener('click', () => {
+                track.selected = !track.selected;
+                toggleButton.textContent = track.selected ? 'Remove' : 'Add';
+                toggleButton.style.backgroundColor = track.selected ? '#E61E32' : '#1DB954';
+            });
+            actionsDiv.appendChild(toggleButton);
+            
+            // Assemble
+            trackElement.appendChild(img);
+            trackElement.appendChild(infoDiv);
+            trackElement.appendChild(actionsDiv);
+            
+            return trackElement;
+        }
+        
         function addSelectedToPlaylist() {
-            const selectedTracks = searchResults.filter(track => track.selected);
+            let selectedTracks = [];
+            
+            // Collect all selected tracks
+            Object.values(searchResults).forEach(result => {
+                if (result && result.tracks) {
+                    const selected = result.tracks.filter(track => track.selected);
+                    selectedTracks = [...selectedTracks, ...selected];
+                }
+            });
             
             if (selectedTracks.length === 0) {
                 alert('Please select at least one song to add to your playlist.');
@@ -581,7 +690,7 @@ Dua Lipa - Don't Start Now"></textarea>
             songs = [...songs, ...selectedTracks];
             
             // Clear search results
-            searchResults = [];
+            searchResults = {};
             songPreviewContainer.style.display = 'none';
             
             // Update playlist preview
@@ -718,7 +827,7 @@ Dua Lipa - Don't Start Now"></textarea>
         function resetToCreatePage() {
             // Clear all data for a new playlist
             songs = [];
-            searchResults = [];
+            searchResults = {};
             playlistTitle.value = '';
             songInput.value = '';
             multipleSongInput.value = '';
