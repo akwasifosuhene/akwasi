@@ -42,6 +42,11 @@
             background-color: #1ed760;
         }
         
+        button:disabled {
+            background-color: #565656;
+            cursor: not-allowed;
+        }
+        
         input, textarea {
             width: 100%;
             padding: 10px;
@@ -52,15 +57,9 @@
             color: white;
         }
         
-        .song-entry {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .song-entry input {
-            flex-grow: 1;
-            margin-right: 10px;
+        textarea {
+            height: 120px;
+            resize: vertical;
         }
         
         #songList {
@@ -79,6 +78,15 @@
         
         .song-info {
             flex-grow: 1;
+            display: flex;
+            align-items: center;
+        }
+        
+        .song-info img {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+            border-radius: 4px;
         }
         
         .song-actions button {
@@ -115,6 +123,80 @@
             border-radius: 4px;
             margin: 10px 0;
         }
+        
+        .preview-container {
+            background-color: #282828;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .preview-song-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .preview-song-item img {
+            width: 50px;
+            height: 50px;
+            margin-right: 15px;
+            border-radius: 4px;
+        }
+        
+        .preview-song-info {
+            flex-grow: 1;
+        }
+        
+        .preview-song-actions {
+            display: flex;
+            align-items: center;
+        }
+        
+        .preview-song-actions button {
+            margin-left: 8px;
+        }
+        
+        .audio-player {
+            height: 30px;
+            margin: 0 10px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #282828;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+        }
+        
+        .tab.active {
+            background-color: #1DB954;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -135,12 +217,41 @@
             <h2>Create New Playlist</h2>
             <input type="text" id="playlistTitle" placeholder="Enter playlist title">
             
-            <div class="song-entry">
-                <input type="text" id="songInput" placeholder="Enter artist and song (e.g., Adele - Hello)">
-                <button id="addSongButton">Add</button>
+            <div class="tabs">
+                <div class="tab active" data-tab="multipleInput">Multiple Songs</div>
+                <div class="tab" data-tab="singleInput">Add One Song</div>
             </div>
             
-            <div id="songList"></div>
+            <!-- Multiple Songs Input -->
+            <div id="multipleInput" class="tab-content active">
+                <p>Enter multiple songs, one per line (e.g., "Artist - Song Title")</p>
+                <textarea id="multipleSongInput" placeholder="Adele - Hello
+The Weeknd - Blinding Lights
+Dua Lipa - Don't Start Now"></textarea>
+                <button id="analyzeMultipleSongsButton">Analyze Songs</button>
+            </div>
+            
+            <!-- Single Song Input -->
+            <div id="singleInput" class="tab-content">
+                <p>Enter a single song</p>
+                <input type="text" id="songInput" placeholder="Enter artist and song (e.g., Adele - Hello)">
+                <button id="addSongButton">Add Song</button>
+            </div>
+            
+            <!-- Song Preview Section -->
+            <div id="songPreviewContainer" style="display: none;" class="preview-container">
+                <div class="preview-header">
+                    <h3>Song Previews from Spotify</h3>
+                    <button id="addAllToPlaylistButton">Add Selected to Playlist</button>
+                </div>
+                <div id="songPreviews"></div>
+            </div>
+            
+            <!-- Playlist Preview Section -->
+            <div id="playlistPreview">
+                <h3>Your Playlist</h3>
+                <div id="songList"></div>
+            </div>
             
             <button id="createPlaylistButton" disabled>Create Playlist</button>
         </div>
@@ -174,6 +285,7 @@
         let accessToken = '';
         let userId = '';
         let songs = [];
+        let searchResults = [];
         
         // DOM Elements
         const loginPage = document.getElementById('loginPage');
@@ -183,20 +295,49 @@
         const loginButton = document.getElementById('loginButton');
         const playlistTitle = document.getElementById('playlistTitle');
         const songInput = document.getElementById('songInput');
+        const multipleSongInput = document.getElementById('multipleSongInput');
         const addSongButton = document.getElementById('addSongButton');
+        const analyzeMultipleSongsButton = document.getElementById('analyzeMultipleSongsButton');
+        const addAllToPlaylistButton = document.getElementById('addAllToPlaylistButton');
         const songList = document.getElementById('songList');
+        const songPreviewContainer = document.getElementById('songPreviewContainer');
+        const songPreviews = document.getElementById('songPreviews');
         const createPlaylistButton = document.getElementById('createPlaylistButton');
         const createNewPlaylistButton = document.getElementById('createNewPlaylistButton');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
         
         // Event Listeners
         loginButton.addEventListener('click', authorizeWithSpotify);
-        addSongButton.addEventListener('click', analyzeSongInput);
+        addSongButton.addEventListener('click', () => analyzeSongInput(songInput.value));
+        analyzeMultipleSongsButton.addEventListener('click', analyzeMultipleSongs);
+        addAllToPlaylistButton.addEventListener('click', addSelectedToPlaylist);
         createPlaylistButton.addEventListener('click', createPlaylist);
         createNewPlaylistButton.addEventListener('click', resetToCreatePage);
+        
         songInput.addEventListener('keypress', function(event) {
             if (event.key === 'Enter') {
-                analyzeSongInput();
+                analyzeSongInput(songInput.value);
             }
+        });
+        
+        // Set up tabs
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                // Update active tab
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show corresponding content
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === tabId) {
+                        content.classList.add('active');
+                    }
+                });
+            });
         });
         
         // Check if we're returning from Spotify authorization
@@ -225,7 +366,7 @@
         }
         
         function authorizeWithSpotify() {
-            const scopes = 'playlist-modify-public playlist-modify-private';
+            const scopes = 'playlist-modify-public playlist-modify-private user-read-private';
             const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&response_type=token`;
             window.location.href = authUrl;
         }
@@ -255,27 +396,59 @@
             });
         }
         
-        async function analyzeSongInput() {
-            const input = songInput.value.trim();
+        function analyzeMultipleSongs() {
+            const input = multipleSongInput.value.trim();
+            if (!input) return;
+            
+            showPage(loadingPage);
+            
+            // Split by lines
+            const lines = input.split('\n').filter(line => line.trim() !== '');
+            
+            // Process each line
+            const promises = lines.map(line => {
+                return searchSpotify(line);
+            });
+            
+            // Wait for all searches to complete
+            Promise.allSettled(promises)
+                .then(results => {
+                    // Filter successful results and flatten
+                    searchResults = results
+                        .filter(result => result.status === 'fulfilled' && result.value.length > 0)
+                        .map(result => result.value)
+                        .flat();
+                    
+                    // Show previews
+                    renderSearchResults();
+                    
+                    // Return to create page
+                    showPage(createPlaylistPage);
+                })
+                .catch(error => {
+                    console.error('Error analyzing songs:', error);
+                    showPage(createPlaylistPage);
+                });
+        }
+        
+        async function analyzeSongInput(input) {
+            input = input.trim();
             if (!input) return;
             
             showPage(loadingPage);
             
             try {
-                // Simulate AI analysis to extract artist and song
-                // In a real app, you might use Claude API here
-                const result = analyzeArtistAndSong(input);
+                // Search Spotify
+                const results = await searchSpotify(input);
+                searchResults = results;
                 
-                // Add to our songs array
-                songs.push(result);
+                // Show results
+                renderSearchResults();
                 
-                // Update UI
-                renderSongList();
+                // Clear input
                 songInput.value = '';
                 
-                // Enable create playlist button if we have at least one song
-                createPlaylistButton.disabled = songs.length === 0;
-                
+                // Show create playlist page
                 showPage(createPlaylistPage);
             } catch (error) {
                 console.error('Error analyzing song input:', error);
@@ -284,7 +457,7 @@
                 // Show error message
                 const errorDiv = document.createElement('div');
                 errorDiv.className = 'error';
-                errorDiv.textContent = 'Error analyzing song input. Please try again with format "Artist - Song".';
+                errorDiv.textContent = 'Error searching for songs. Please try again.';
                 songList.prepend(errorDiv);
                 
                 // Remove error message after 3 seconds
@@ -296,28 +469,130 @@
             }
         }
         
-        function analyzeArtistAndSong(input) {
-            // Simple function to extract artist and song
-            // This simulates what an AI like Claude might do
+        async function searchSpotify(query) {
+            // Extract artist and song if possible
+            let searchQuery = query;
+            let extractedInfo = { artist: '', song: '' };
             
-            // Check if input contains a hyphen (common format: "Artist - Song")
-            if (input.includes('-')) {
-                const [artist, song] = input.split('-').map(part => part.trim());
-                return { artist, song };
-            } 
-            
-            // If no hyphen, try to make a best guess
-            // This is very simplified - a real AI would be much more sophisticated
-            const words = input.split(' ');
-            if (words.length <= 2) {
-                // If only 1-2 words, assume it's just a song title
-                return { artist: 'Unknown', song: input };
+            if (query.includes('-')) {
+                const [artist, song] = query.split('-').map(part => part.trim());
+                extractedInfo = { artist, song };
+                searchQuery = `track:${song} artist:${artist}`;
             } else {
-                // Otherwise guess that first word is artist, rest is song
-                const artist = words[0];
-                const song = words.slice(1).join(' ');
-                return { artist, song };
+                searchQuery = `track:${query}`;
+                extractedInfo = { artist: '', song: query };
             }
+            
+            // Search Spotify
+            const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(searchQuery)}&type=track&limit=5`, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to search Spotify');
+            }
+            
+            const data = await response.json();
+            
+            // Process results
+            return data.tracks.items.map(track => ({
+                id: track.id,
+                name: track.name,
+                artist: track.artists.map(a => a.name).join(', '),
+                album: track.album.name,
+                image: track.album.images.length > 0 ? track.album.images[track.album.images.length - 1].url : null,
+                preview_url: track.preview_url,
+                uri: track.uri,
+                originalQuery: query,
+                selected: true
+            }));
+        }
+        
+        function renderSearchResults() {
+            if (searchResults.length === 0) {
+                songPreviewContainer.style.display = 'none';
+                return;
+            }
+            
+            songPreviewContainer.style.display = 'block';
+            songPreviews.innerHTML = '';
+            
+            searchResults.forEach((track, index) => {
+                const trackElement = document.createElement('div');
+                trackElement.className = 'preview-song-item';
+                
+                // Image
+                const img = document.createElement('img');
+                img.src = track.image || '/api/placeholder/50/50';
+                img.alt = `${track.name} album cover`;
+                
+                // Info
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'preview-song-info';
+                infoDiv.innerHTML = `
+                    <strong>${track.name}</strong><br>
+                    <span>${track.artist}</span><br>
+                    <small>${track.album}</small>
+                `;
+                
+                // Actions
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'preview-song-actions';
+                
+                // Audio preview
+                if (track.preview_url) {
+                    const audio = document.createElement('audio');
+                    audio.className = 'audio-player';
+                    audio.controls = true;
+                    audio.src = track.preview_url;
+                    actionsDiv.appendChild(audio);
+                }
+                
+                // Add/Remove toggle button
+                const toggleButton = document.createElement('button');
+                toggleButton.textContent = track.selected ? 'Remove' : 'Add';
+                toggleButton.style.backgroundColor = track.selected ? '#E61E32' : '#1DB954';
+                toggleButton.addEventListener('click', () => {
+                    track.selected = !track.selected;
+                    toggleButton.textContent = track.selected ? 'Remove' : 'Add';
+                    toggleButton.style.backgroundColor = track.selected ? '#E61E32' : '#1DB954';
+                });
+                actionsDiv.appendChild(toggleButton);
+                
+                // Assemble
+                trackElement.appendChild(img);
+                trackElement.appendChild(infoDiv);
+                trackElement.appendChild(actionsDiv);
+                songPreviews.appendChild(trackElement);
+            });
+        }
+        
+        function addSelectedToPlaylist() {
+            const selectedTracks = searchResults.filter(track => track.selected);
+            
+            if (selectedTracks.length === 0) {
+                alert('Please select at least one song to add to your playlist.');
+                return;
+            }
+            
+            // Add to songs array
+            songs = [...songs, ...selectedTracks];
+            
+            // Clear search results
+            searchResults = [];
+            songPreviewContainer.style.display = 'none';
+            
+            // Update playlist preview
+            renderSongList();
+            
+            // Enable create playlist button if we have songs
+            createPlaylistButton.disabled = songs.length === 0;
+            
+            // Clear inputs
+            songInput.value = '';
+            multipleSongInput.value = '';
         }
         
         function renderSongList() {
@@ -334,10 +609,30 @@
                 
                 const songInfo = document.createElement('div');
                 songInfo.className = 'song-info';
-                songInfo.innerHTML = `<strong>${song.artist}</strong> - ${song.song}`;
+                
+                // Add image if available
+                if (song.image) {
+                    const img = document.createElement('img');
+                    img.src = song.image;
+                    img.alt = 'Album cover';
+                    songInfo.appendChild(img);
+                }
+                
+                const textInfo = document.createElement('div');
+                textInfo.innerHTML = `<strong>${song.name}</strong><br>${song.artist}`;
+                songInfo.appendChild(textInfo);
                 
                 const songActions = document.createElement('div');
                 songActions.className = 'song-actions';
+                
+                // Add audio preview if available
+                if (song.preview_url) {
+                    const audio = document.createElement('audio');
+                    audio.controls = true;
+                    audio.src = song.preview_url;
+                    audio.className = 'audio-player';
+                    songActions.appendChild(audio);
+                }
                 
                 const removeButton = document.createElement('button');
                 removeButton.textContent = 'Remove';
@@ -387,8 +682,8 @@
                 const playlistData = await playlistResponse.json();
                 const playlistId = playlistData.id;
                 
-                // Search for each song and add to playlist
-                await addSongsToPlaylist(playlistId);
+                // Add songs to playlist
+                await addTracksToPlaylist(playlistId);
                 
                 // Show success page
                 showPage(successPage);
@@ -399,28 +694,8 @@
             }
         }
         
-        async function addSongsToPlaylist(playlistId) {
-            const trackUris = [];
-            
-            // For each song, search Spotify and get the first result
-            for (const song of songs) {
-                const query = `track:${encodeURIComponent(song.song)} artist:${encodeURIComponent(song.artist)}`;
-                const searchResponse = await fetch(`https://api.spotify.com/v1/search?q=${query}&type=track&limit=1`, {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    }
-                });
-                
-                if (!searchResponse.ok) {
-                    console.error('Failed to search for track:', song);
-                    continue;
-                }
-                
-                const searchData = await searchResponse.json();
-                if (searchData.tracks.items.length > 0) {
-                    trackUris.push(searchData.tracks.items[0].uri);
-                }
-            }
+        async function addTracksToPlaylist(playlistId) {
+            const trackUris = songs.map(song => song.uri);
             
             // Add tracks to playlist in batches of 100 (Spotify API limit)
             if (trackUris.length > 0) {
@@ -443,8 +718,11 @@
         function resetToCreatePage() {
             // Clear all data for a new playlist
             songs = [];
+            searchResults = [];
             playlistTitle.value = '';
             songInput.value = '';
+            multipleSongInput.value = '';
+            songPreviewContainer.style.display = 'none';
             renderSongList();
             createPlaylistButton.disabled = true;
             
