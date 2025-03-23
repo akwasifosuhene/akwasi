@@ -4,842 +4,453 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spotify Playlist Maker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #191414;
-            color: #FFFFFF;
+            background-color: #121212;
+            color: white;
             margin: 0;
             padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .container {
             max-width: 800px;
-            width: 100%;
-            background-color: #121212;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            margin: 0 auto;
         }
-        h1, h2 {
+        
+        h1, h2, h3 {
             color: #1DB954;
-            text-align: center;
         }
-        .step {
-            margin-bottom: 20px;
-            padding: 15px;
-            background-color: #282828;
+        
+        .container {
+            background-color: #181818;
+            padding: 20px;
             border-radius: 8px;
+            margin-bottom: 20px;
         }
-        input, textarea {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            background-color: #333;
-            border: none;
-            border-radius: 4px;
-            color: white;
-        }
+        
         button {
             background-color: #1DB954;
             color: white;
             border: none;
             padding: 10px 20px;
-            border-radius: 50px;
+            border-radius: 30px;
             cursor: pointer;
-            margin: 10px 0;
             font-weight: bold;
+            margin: 10px 5px 10px 0;
         }
+        
         button:hover {
             background-color: #1ed760;
         }
-        .playlist-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        
+        input, textarea {
+            width: 100%;
             padding: 10px;
-            margin: 5px 0;
-            background-color: #333;
+            margin: 10px 0;
             border-radius: 4px;
-        }
-        .remove-btn {
-            background-color: #e74c3c;
-            padding: 5px 10px;
-        }
-        .hidden {
-            display: none;
-        }
-        .status {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 4px;
-        }
-        .success {
-            background-color: #1DB954;
-        }
-        .error {
-            background-color: #e74c3c;
-        }
-        .success-page {
-            text-align: center;
-            padding: 30px;
-        }
-        .playlist-info {
-            margin: 20px 0;
-            padding: 15px;
+            border: 1px solid #333;
             background-color: #333;
-            border-radius: 8px;
-            text-align: left;
-        }
-        .success-icon {
-            font-size: 50px;
-            color: #1DB954;
-            margin-bottom: 20px;
+            color: white;
         }
         
-        /* Chat interface styles */
-        .chat-container {
-            height: 400px;
+        .song-entry {
             display: flex;
-            flex-direction: column;
-            border-radius: 8px;
-            overflow: hidden;
+            align-items: center;
+            margin-bottom: 10px;
         }
-        .chat-messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 15px;
-            background-color: #333;
-        }
-        .chat-input-container {
-            display: flex;
-            padding: 10px;
-            background-color: #121212;
-        }
-        .chat-input {
+        
+        .song-entry input {
             flex-grow: 1;
             margin-right: 10px;
         }
-        .message {
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 8px;
-            max-width: 80%;
+        
+        #songList {
+            margin-top: 20px;
         }
-        .user-message {
-            background-color: #1DB954;
-            color: white;
-            align-self: flex-end;
-            margin-left: auto;
-        }
-        .assistant-message {
-            background-color: #555;
-            align-self: flex-start;
-        }
-        .chat-notification {
-            text-align: center;
-            color: #999;
-            margin: 10px 0;
-            font-style: italic;
-        }
-        .tab-container {
+        
+        .song-item {
             display: flex;
-            border-bottom: 1px solid #555;
-            margin-bottom: 15px;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #282828;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 8px;
         }
-        .tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            border-radius: 8px 8px 0 0;
+        
+        .song-info {
+            flex-grow: 1;
         }
-        .tab.active {
-            background-color: #1DB954;
-            color: white;
+        
+        .song-actions button {
+            padding: 5px 10px;
+            margin-left: 5px;
         }
-        .tab-content {
+        
+        .page {
             display: none;
         }
-        .tab-content.active {
+        
+        .active {
             display: block;
         }
-        .notification-banner {
+        
+        .success-message {
             background-color: #1DB954;
             color: white;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 4px;
+            padding: 20px;
+            border-radius: 8px;
             text-align: center;
-            animation: fadeOut 0.5s ease 3s forwards;
+            margin: 20px 0;
         }
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; visibility: hidden; }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .error {
+            background-color: #E61E32;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Spotify Playlist Maker</h1>
-        
-        <!-- Login Button -->
-        <div id="login-section" class="step">
-            <button id="login-btn">Login to Spotify</button>
-            <div id="login-status" class="status hidden"></div>
-        </div>
-        
-        <div id="main-container" class="hidden">
-            <div id="notification-area"></div>
-            
-            <!-- Tab Navigation -->
-            <div class="tab-container">
-                <div class="tab active" data-tab="chat-tab">Chat Interface</div>
-                <div class="tab" data-tab="manual-tab">Manual Entry</div>
-            </div>
-            
-            <!-- Chat Interface Tab -->
-            <div id="chat-tab" class="tab-content active">
-                <div class="step">
-                    <h2>Chat with AI to Create a Playlist</h2>
-                    <div class="chat-container">
-                        <div id="chat-messages" class="chat-messages">
-                            <div class="message assistant-message">
-                                Hi there! I can help you create a Spotify playlist. Try something like:
-                                <br><br>
-                                "Make a playlist called 'Sunday Chill' with songs by Billie Eilish, Ed Sheeran, and The Weeknd"
-                                <br><br>
-                                or
-                                <br><br>
-                                "Create a workout playlist with upbeat songs from the 90s"
-                            </div>
-                        </div>
-                        <div class="chat-input-container">
-                            <input type="text" id="chat-input" class="chat-input" placeholder="Type your message here...">
-                            <button id="send-btn">Send</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Manual Entry Tab -->
-            <div id="manual-tab" class="tab-content">
-                <div class="step">
-                    <h2>Create Your Playlist</h2>
-                    <div>
-                        <label for="playlist-name">Playlist Name:</label>
-                        <input type="text" id="playlist-name" placeholder="Enter playlist name">
-                        
-                        <label for="songs-input">Enter Songs (one per line):</label>
-                        <textarea id="songs-input" rows="8" placeholder="Enter songs here, one per line.&#10;For example:&#10;Shape of You by Ed Sheeran&#10;Bad Guy by Billie Eilish"></textarea>
-                        
-                        <button id="process-btn">Process Songs</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Step 2: AI Processing -->
-        <div id="step2" class="step hidden">
-            <h2>Processing Songs</h2>
-            <div id="processing-status">Processing songs...</div>
-            <div id="processed-results" class="hidden"></div>
-        </div>
-        
-        <!-- Step 3: Review Playlist -->
-        <div id="step3" class="step hidden">
-            <h2>Review Your Playlist</h2>
-            <div id="playlist-review-name"></div>
-            <div id="playlist-preview"></div>
-            <button id="create-playlist-btn">Create Playlist on Spotify</button>
-            <button id="back-btn">Go Back</button>
-        </div>
-        
-        <!-- Step 4: Confirmation -->
-        <div id="step4" class="step hidden">
-            <div class="success-page">
-                <div class="success-icon">✓</div>
-                <h2>Playlist Created Successfully!</h2>
-                <div id="playlist-details" class="playlist-info"></div>
-                <div id="confirmation-message"></div>
-                <button id="start-over-btn">Create Another Playlist</button>
-            </div>
+    <h1>Spotify Playlist Maker</h1>
+    
+    <!-- Login Page -->
+    <div id="loginPage" class="page active">
+        <div class="container">
+            <h2>Login to Spotify</h2>
+            <p>To create playlists, you need to authorize access to your Spotify account.</p>
+            <button id="loginButton">Login with Spotify</button>
         </div>
     </div>
-
+    
+    <!-- Create Playlist Page -->
+    <div id="createPlaylistPage" class="page">
+        <div class="container">
+            <h2>Create New Playlist</h2>
+            <input type="text" id="playlistTitle" placeholder="Enter playlist title">
+            
+            <div class="song-entry">
+                <input type="text" id="songInput" placeholder="Enter artist and song (e.g., Adele - Hello)">
+                <button id="addSongButton">Add</button>
+            </div>
+            
+            <div id="songList"></div>
+            
+            <button id="createPlaylistButton" disabled>Create Playlist</button>
+        </div>
+    </div>
+    
+    <!-- Success Page -->
+    <div id="successPage" class="page">
+        <div class="container">
+            <div class="success-message">
+                <h2>Playlist Created Successfully!</h2>
+                <p>Your playlist has been added to your Spotify account.</p>
+            </div>
+            <button id="createNewPlaylistButton">Create Another Playlist</button>
+        </div>
+    </div>
+    
+    <!-- Loading indicator -->
+    <div id="loadingPage" class="page">
+        <div class="loading">
+            <h3>Processing...</h3>
+            <p>Please wait while we process your request.</p>
+        </div>
+    </div>
+    
     <script>
-        // Spotify API Information
+        // Spotify Authentication 
         const clientId = '82910fe423f24953a93aa6188fd25c58';
         const redirectUri = 'https://jrakwasi.github.io/akwasi/';
-        const scope = 'playlist-modify-public user-read-private';
         
-        // Elements
-        const loginBtn = document.getElementById('login-btn');
-        const loginStatus = document.getElementById('login-status');
-        const loginSection = document.getElementById('login-section');
-        const mainContainer = document.getElementById('main-container');
-        const step2 = document.getElementById('step2');
-        const step3 = document.getElementById('step3');
-        const step4 = document.getElementById('step4');
-        const processBtn = document.getElementById('process-btn');
-        const createPlaylistBtn = document.getElementById('create-playlist-btn');
-        const backBtn = document.getElementById('back-btn');
-        const startOverBtn = document.getElementById('start-over-btn');
-        const playlistNameInput = document.getElementById('playlist-name');
-        const songsInput = document.getElementById('songs-input');
-        const playlistPreview = document.getElementById('playlist-preview');
-        const playlistReviewName = document.getElementById('playlist-review-name');
-        const processingStatus = document.getElementById('processing-status');
-        const confirmationMessage = document.getElementById('confirmation-message');
-        const playlistDetails = document.getElementById('playlist-details');
-        const notificationArea = document.getElementById('notification-area');
-        const chatMessages = document.getElementById('chat-messages');
-        const chatInput = document.getElementById('chat-input');
-        const sendBtn = document.getElementById('send-btn');
-        const tabs = document.querySelectorAll('.tab');
-        const tabContents = document.querySelectorAll('.tab-content');
+        // Application State
+        let accessToken = '';
+        let userId = '';
+        let songs = [];
         
-        // Global variables
-        let accessToken = null;
-        let userId = null;
-        let processedSongs = [];
-        let currentPlaylistName = '';
-        let activeTab = 'chat-tab';
+        // DOM Elements
+        const loginPage = document.getElementById('loginPage');
+        const createPlaylistPage = document.getElementById('createPlaylistPage');
+        const successPage = document.getElementById('successPage');
+        const loadingPage = document.getElementById('loadingPage');
+        const loginButton = document.getElementById('loginButton');
+        const playlistTitle = document.getElementById('playlistTitle');
+        const songInput = document.getElementById('songInput');
+        const addSongButton = document.getElementById('addSongButton');
+        const songList = document.getElementById('songList');
+        const createPlaylistButton = document.getElementById('createPlaylistButton');
+        const createNewPlaylistButton = document.getElementById('createNewPlaylistButton');
         
-        // Tab switching
-        tabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                // Remove active class from all tabs
-                tabs.forEach(t => t.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
-                
-                // Add active class to clicked tab
-                this.classList.add('active');
-                const tabId = this.dataset.tab;
-                document.getElementById(tabId).classList.add('active');
-                activeTab = tabId;
-            });
+        // Event Listeners
+        loginButton.addEventListener('click', authorizeWithSpotify);
+        addSongButton.addEventListener('click', analyzeSongInput);
+        createPlaylistButton.addEventListener('click', createPlaylist);
+        createNewPlaylistButton.addEventListener('click', resetToCreatePage);
+        songInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                analyzeSongInput();
+            }
         });
         
-        // Check for login callback
+        // Check if we're returning from Spotify authorization
         window.onload = function() {
-            const hashParams = getHashParams();
-            if (hashParams.access_token) {
-                accessToken = hashParams.access_token;
-                loginStatus.textContent = 'Successfully logged in!';
-                loginStatus.classList.add('success');
-                loginStatus.classList.remove('hidden');
-                
-                // Hide login section and show main container
-                loginSection.classList.add('hidden');
-                mainContainer.classList.remove('hidden');
-                
-                // Get user info
-                getUserInfo();
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                const params = new URLSearchParams(hash);
+                accessToken = params.get('access_token');
+                if (accessToken) {
+                    // Clear hash from URL
+                    history.replaceState(null, null, ' ');
+                    // Get user profile
+                    fetchUserProfile();
+                }
             }
         };
         
-        // Parse hash parameters
-        function getHashParams() {
-            const hashParams = {};
-            const hash = window.location.hash.substring(1);
-            const regex = /([^&;=]+)=?([^&;]*)/g;
-            let match;
+        function showPage(pageElement) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
             
-            while (match = regex.exec(hash)) {
-                hashParams[decodeURIComponent(match[1])] = decodeURIComponent(match[2]);
-            }
-            
-            // Clear the hash
-            if (hash) {
-                history.replaceState(null, null, ' ');
-            }
-            
-            return hashParams;
+            // Show the requested page
+            pageElement.classList.add('active');
         }
         
-        // Spotify Authorization
-        loginBtn.addEventListener('click', function() {
-            const authUrl = 'https://accounts.spotify.com/authorize' +
-                '?response_type=token' +
-                '&client_id=' + encodeURIComponent(clientId) +
-                '&scope=' + encodeURIComponent(scope) +
-                '&redirect_uri=' + encodeURIComponent(redirectUri) +
-                '&show_dialog=true';
-            
+        function authorizeWithSpotify() {
+            const scopes = 'playlist-modify-public playlist-modify-private';
+            const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&response_type=token`;
             window.location.href = authUrl;
-        });
+        }
         
-        // Get user info
-        function getUserInfo() {
+        function fetchUserProfile() {
+            showPage(loadingPage);
+            
             fetch('https://api.spotify.com/v1/me', {
                 headers: {
-                    'Authorization': 'Bearer ' + accessToken
+                    'Authorization': `Bearer ${accessToken}`
                 }
             })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Failed to get user info');
+                    throw new Error('Failed to fetch user profile');
                 }
                 return response.json();
             })
             .then(data => {
                 userId = data.id;
-                addChatMessage('assistant', `Welcome ${data.display_name}! What kind of playlist would you like to create today?`);
+                showPage(createPlaylistPage);
             })
             .catch(error => {
-                loginStatus.textContent = 'Error: ' + error.message;
-                loginStatus.classList.add('error');
-                loginStatus.classList.remove('hidden');
+                console.error('Error fetching user profile:', error);
+                showPage(loginPage);
+                alert('Authentication failed. Please try again.');
             });
         }
         
-        // Add chat message
-        function addChatMessage(sender, message) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${sender}-message`;
-            messageDiv.textContent = message;
-            chatMessages.appendChild(messageDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-        
-        // Add chat notification
-        function addChatNotification(message) {
-            const notificationDiv = document.createElement('div');
-            notificationDiv.className = 'chat-notification';
-            notificationDiv.textContent = message;
-            chatMessages.appendChild(notificationDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-        
-        // Show notification banner
-        function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.className = `notification-banner ${type}`;
-            notification.textContent = message;
-            notificationArea.appendChild(notification);
+        async function analyzeSongInput() {
+            const input = songInput.value.trim();
+            if (!input) return;
             
-            // Remove after animation completes
-            setTimeout(() => {
-                notification.remove();
-            }, 3500);
-        }
-        
-        // Send chat message
-        sendBtn.addEventListener('click', function() {
-            sendChatMessage();
-        });
-        
-        chatInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendChatMessage();
+            showPage(loadingPage);
+            
+            try {
+                // Simulate AI analysis to extract artist and song
+                // In a real app, you might use Claude API here
+                const result = analyzeArtistAndSong(input);
+                
+                // Add to our songs array
+                songs.push(result);
+                
+                // Update UI
+                renderSongList();
+                songInput.value = '';
+                
+                // Enable create playlist button if we have at least one song
+                createPlaylistButton.disabled = songs.length === 0;
+                
+                showPage(createPlaylistPage);
+            } catch (error) {
+                console.error('Error analyzing song input:', error);
+                showPage(createPlaylistPage);
+                
+                // Show error message
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error';
+                errorDiv.textContent = 'Error analyzing song input. Please try again with format "Artist - Song".';
+                songList.prepend(errorDiv);
+                
+                // Remove error message after 3 seconds
+                setTimeout(() => {
+                    if (errorDiv.parentNode) {
+                        errorDiv.parentNode.removeChild(errorDiv);
+                    }
+                }, 3000);
             }
-        });
-        
-        function sendChatMessage() {
-            const message = chatInput.value.trim();
-            if (!message) return;
-            
-            // Add user message to chat
-            addChatMessage('user', message);
-            chatInput.value = '';
-            
-            // Process the message
-            processAIMessage(message);
         }
         
-        // Process AI message
-        function processAIMessage(message) {
-            // Add typing indicator
-            addChatNotification('Processing your request...');
+        function analyzeArtistAndSong(input) {
+            // Simple function to extract artist and song
+            // This simulates what an AI like Claude might do
             
-            // Simulate AI processing
-            setTimeout(() => {
-                // Remove the last notification (typing indicator)
-                chatMessages.removeChild(chatMessages.lastChild);
-                
-                // Extract playlist info from message
-                let playlistName = '';
-                let songList = [];
-                
-                // Simple parsing - in a real app, this would use Claude's API
-                if (message.toLowerCase().includes('playlist called')) {
-                    const nameMatch = message.match(/playlist called ['"]?([^'"]+)['"]?/i);
-                    if (nameMatch) {
-                        playlistName = nameMatch[1];
-                    }
-                } else if (message.toLowerCase().includes('create a')) {
-                    const nameMatch = message.match(/create a ([^,\.]+) playlist/i);
-                    if (nameMatch) {
-                        playlistName = nameMatch[1] + ' Playlist';
-                    }
-                } else if (message.toLowerCase().includes('make a')) {
-                    const nameMatch = message.match(/make a ([^,\.]+) playlist/i);
-                    if (nameMatch) {
-                        playlistName = nameMatch[1] + ' Playlist';
-                    }
-                }
-                
-                // Default name if we couldn't parse one
-                if (!playlistName) {
-                    playlistName = 'My AI Generated Playlist';
-                }
-                
-                // Extract artists
-                const artists = [];
-                if (message.toLowerCase().includes('with songs by')) {
-                    const artistMatch = message.match(/with songs by (.+?)(?:$|\.|\band\b|,)/i);
-                    if (artistMatch) {
-                        // Split the artists by commas and "and"
-                        const artistText = artistMatch[1];
-                        artists.push(...artistText.split(/,\s*|\s+and\s+/).filter(a => a.trim() !== ''));
-                    }
-                }
-                
-                // Generate song list based on extracted info
-                if (artists.length > 0) {
-                    // Create sample songs from the artists
-                    artists.forEach(artist => {
-                        // This is a very simplistic approach - a real app would use Claude's API or a music database
-                        const tracks = getPopularTracksForArtist(artist);
-                        songList.push(...tracks.map(track => ({ artist, track })));
-                    });
-                } else {
-                    // Generate a generic song list based on the playlist name
-                    songList = generateSampleSongList(playlistName);
-                }
-                
-                // Update variables
-                currentPlaylistName = playlistName;
-                processedSongs = songList.map((song, index) => ({
-                    id: index,
-                    artist: song.artist,
-                    track: song.track,
-                    original: `${song.track} by ${song.artist}`
-                }));
-                
-                // Response message
-                addChatMessage('assistant', `I've created a playlist called "${playlistName}" with ${songList.length} songs. Would you like to review it?`);
-                
-                // Show the review button
-                const reviewBtn = document.createElement('button');
-                reviewBtn.textContent = 'Review Playlist';
-                reviewBtn.onclick = function() {
-                    mainContainer.classList.add('hidden');
-                    playlistReviewName.innerHTML = `<h3>Playlist: ${playlistName}</h3>`;
-                    step3.classList.remove('hidden');
-                    generatePlaylistPreview();
-                };
-                chatMessages.appendChild(reviewBtn);
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }, 1500);
-        }
-        
-        // Helper function to get popular tracks for an artist (simulated)
-        function getPopularTracksForArtist(artist) {
-            // This would be replaced by actual API calls in a real app
-            const tracks = {
-                'Billie Eilish': ['Bad Guy', 'Ocean Eyes', 'Everything I Wanted'],
-                'Ed Sheeran': ['Shape of You', 'Perfect', 'Thinking Out Loud'],
-                'The Weeknd': ['Blinding Lights', 'Starboy', 'Save Your Tears'],
-                'Taylor Swift': ['Anti-Hero', 'Blank Space', 'Cruel Summer'],
-                'Drake': ['God\'s Plan', 'Hotline Bling', 'One Dance'],
-                'Ariana Grande': ['Thank U, Next', '7 Rings', 'Positions']
-            };
+            // Check if input contains a hyphen (common format: "Artist - Song")
+            if (input.includes('-')) {
+                const [artist, song] = input.split('-').map(part => part.trim());
+                return { artist, song };
+            } 
             
-            // Return tracks for the specified artist, or generic tracks if artist not found
-            return tracks[artist] || 
-                [`Song for ${artist}`, `${artist}'s Greatest Hit`, `The Best of ${artist}`];
-        }
-        
-        // Helper function to generate a sample song list based on playlist name
-        function generateSampleSongList(playlistName) {
-            const lowerName = playlistName.toLowerCase();
-            let songList = [];
-            
-            if (lowerName.includes('workout') || lowerName.includes('gym')) {
-                songList = [
-                    { artist: 'Survivor', track: 'Eye of the Tiger' },
-                    { artist: 'Eminem', track: 'Till I Collapse' },
-                    { artist: 'Kanye West', track: 'Stronger' },
-                    { artist: 'Dua Lipa', track: 'Physical' }
-                ];
-            } else if (lowerName.includes('chill') || lowerName.includes('relax')) {
-                songList = [
-                    { artist: 'Billie Eilish', track: 'Ocean Eyes' },
-                    { artist: 'Frank Ocean', track: 'Pink + White' },
-                    { artist: 'Coldplay', track: 'Fix You' },
-                    { artist: 'Bon Iver', track: 'Holocene' }
-                ];
-            } else if (lowerName.includes('party') || lowerName.includes('dance')) {
-                songList = [
-                    { artist: 'Daft Punk', track: 'Get Lucky' },
-                    { artist: 'The Weeknd', track: 'Blinding Lights' },
-                    { artist: 'Dua Lipa', track: 'Don\'t Start Now' },
-                    { artist: 'Calvin Harris', track: 'This Is What You Came For' }
-                ];
+            // If no hyphen, try to make a best guess
+            // This is very simplified - a real AI would be much more sophisticated
+            const words = input.split(' ');
+            if (words.length <= 2) {
+                // If only 1-2 words, assume it's just a song title
+                return { artist: 'Unknown', song: input };
             } else {
-                // Default mixed playlist
-                songList = [
-                    { artist: 'The Weeknd', track: 'Blinding Lights' },
-                    { artist: 'Billie Eilish', track: 'Bad Guy' },
-                    { artist: 'Harry Styles', track: 'Watermelon Sugar' },
-                    { artist: 'Taylor Swift', track: 'Anti-Hero' },
-                    { artist: 'Post Malone', track: 'Circles' }
-                ];
+                // Otherwise guess that first word is artist, rest is song
+                const artist = words[0];
+                const song = words.slice(1).join(' ');
+                return { artist, song };
             }
-            
-            return songList;
         }
         
-        // Process songs from manual entry
-        processBtn.addEventListener('click', function() {
-            const playlistName = playlistNameInput.value.trim();
-            const songsText = songsInput.value.trim();
+        function renderSongList() {
+            songList.innerHTML = '';
             
-            if (!playlistName) {
-                alert('Please enter a playlist name');
+            if (songs.length === 0) {
+                songList.innerHTML = '<p>No songs added yet.</p>';
                 return;
             }
             
-            if (!songsText) {
-                alert('Please enter at least one song');
-                return;
-            }
-            
-            // Show processing step
-            mainContainer.classList.add('hidden');
-            step2.classList.remove('hidden');
-            
-            // Split input by lines
-            const songLines = songsText.split('\n').filter(line => line.trim() !== '');
-            
-            // Set current playlist name
-            currentPlaylistName = playlistName;
-            
-            // Simulate AI processing (parsing artist and song)
-            processedSongs = [];
-            
-            // Simple parsing function that assumes format: "Song by Artist"
-            const parsePromises = songLines.map((line, index) => {
-                return new Promise(resolve => {
-                    setTimeout(() => {
-                        let artist, track;
-                        
-                        if (line.includes(' by ')) {
-                            const parts = line.split(' by ');
-                            track = parts[0].trim();
-                            artist = parts[1].trim();
-                        } else {
-                            // If format doesn't match, use placeholder
-                            track = line.trim();
-                            artist = 'Unknown Artist';
-                        }
-                        
-                        processedSongs.push({
-                            id: index,
-                            artist: artist,
-                            track: track,
-                            original: line
-                        });
-                        
-                        resolve();
-                    }, 300); // Simulate processing time
-                });
-            });
-            
-            // When all songs are processed, move to review step
-            Promise.all(parsePromises).then(() => {
-                // After processing, show review step
-                step2.classList.add('hidden');
-                playlistReviewName.innerHTML = `<h3>Playlist: ${currentPlaylistName}</h3>`;
-                step3.classList.remove('hidden');
+            songs.forEach((song, index) => {
+                const songItem = document.createElement('div');
+                songItem.className = 'song-item';
                 
-                // Generate playlist preview
-                generatePlaylistPreview();
-            });
-        });
-        
-        // Generate playlist preview
-        function generatePlaylistPreview() {
-            playlistPreview.innerHTML = '';
-            
-            if (processedSongs.length === 0) {
-                playlistPreview.innerHTML = '<p>No songs to display</p>';
-                return;
-            }
-            
-            processedSongs.forEach(song => {
-                const songElement = document.createElement('div');
-                songElement.className = 'playlist-item';
-                songElement.dataset.id = song.id;
+                const songInfo = document.createElement('div');
+                songInfo.className = 'song-info';
+                songInfo.innerHTML = `<strong>${song.artist}</strong> - ${song.song}`;
                 
-                songElement.innerHTML = `
-                    <div>
-                        <strong>${song.track}</strong> by ${song.artist}
-                    </div>
-                    <button class="remove-btn">Remove</button>
-                `;
+                const songActions = document.createElement('div');
+                songActions.className = 'song-actions';
                 
-                playlistPreview.appendChild(songElement);
-            });
-            
-            // Add event listeners to remove buttons
-            document.querySelectorAll('.remove-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const songId = parseInt(this.parentElement.dataset.id);
-                    processedSongs = processedSongs.filter(song => song.id !== songId);
-                    this.parentElement.remove();
-                    
-                    if (processedSongs.length === 0) {
-                        playlistPreview.innerHTML = '<p>No songs to display</p>';
-                    }
-                });
+                const removeButton = document.createElement('button');
+                removeButton.textContent = 'Remove';
+                removeButton.addEventListener('click', () => removeSong(index));
+                
+                songActions.appendChild(removeButton);
+                songItem.appendChild(songInfo);
+                songItem.appendChild(songActions);
+                songList.appendChild(songItem);
             });
         }
         
-        // Go back button
-        backBtn.addEventListener('click', function() {
-            step3.classList.add('hidden');
-            mainContainer.classList.remove('hidden');
-        });
+        function removeSong(index) {
+            songs.splice(index, 1);
+            renderSongList();
+            createPlaylistButton.disabled = songs.length === 0;
+        }
         
-        // Create playlist on Spotify
-        createPlaylistBtn.addEventListener('click', function() {
-            if (processedSongs.length === 0) {
-                alert('Your playlist is empty. Please add some songs.');
+        async function createPlaylist() {
+            const title = playlistTitle.value.trim();
+            if (!title || songs.length === 0) {
+                alert('Please enter a playlist title and add at least one song.');
                 return;
             }
             
-            // Store song count for confirmation page
-            const songCount = processedSongs.length;
+            showPage(loadingPage);
             
-            // First create an empty playlist
-            fetch(`https://api.spotify.com/v1/users/${userId}/playlists`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + accessToken,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    name: currentPlaylistName,
-                    description: 'Created with Spotify Playlist Maker',
-                    public: true
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
+            try {
+                // Create a new playlist
+                const playlistResponse = await fetch(`https://api.spotify.com/v1/users/${userId}/playlists`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: title,
+                        description: 'Created with Spotify Playlist Maker',
+                        public: true
+                    })
+                });
+                
+                if (!playlistResponse.ok) {
                     throw new Error('Failed to create playlist');
                 }
-                return response.json();
-            })
-            .then(playlist => {
-                // Now search for tracks and add them to the playlist
-                const playlistId = playlist.id;
-                const searchPromises = [];
                 
-                processedSongs.forEach(song => {
-                    // Search for the track
-                    const query = `track:${song.track} artist:${song.artist}`;
-                    const searchPromise = fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`, {
-                        headers: {
-                            'Authorization': 'Bearer ' + accessToken
-                        }
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`Failed to search for track: ${song.track}`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.tracks.items.length > 0) {
-                            return data.tracks.items[0].uri;
-                        } else {
-                            console.warn(`No tracks found for: ${song.track} by ${song.artist}`);
-                            return null;
-                        }
-                    });
-                    
-                    searchPromises.push(searchPromise);
+                const playlistData = await playlistResponse.json();
+                const playlistId = playlistData.id;
+                
+                // Search for each song and add to playlist
+                await addSongsToPlaylist(playlistId);
+                
+                // Show success page
+                showPage(successPage);
+            } catch (error) {
+                console.error('Error creating playlist:', error);
+                showPage(createPlaylistPage);
+                alert('Error creating playlist. Please try again.');
+            }
+        }
+        
+        async function addSongsToPlaylist(playlistId) {
+            const trackUris = [];
+            
+            // For each song, search Spotify and get the first result
+            for (const song of songs) {
+                const query = `track:${encodeURIComponent(song.song)} artist:${encodeURIComponent(song.artist)}`;
+                const searchResponse = await fetch(`https://api.spotify.com/v1/search?q=${query}&type=track&limit=1`, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
                 });
                 
-                return Promise.all(searchPromises).then(trackUris => {
-                    // Filter out any null results
-                    const validTrackUris = trackUris.filter(uri => uri !== null);
-                    
-                    if (validTrackUris.length === 0) {
-                        throw new Error('No valid tracks found');
-                    }
-                    
-                    // Add tracks to playlist
-                    return fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
+                if (!searchResponse.ok) {
+                    console.error('Failed to search for track:', song);
+                    continue;
+                }
+                
+                const searchData = await searchResponse.json();
+                if (searchData.tracks.items.length > 0) {
+                    trackUris.push(searchData.tracks.items[0].uri);
+                }
+            }
+            
+            // Add tracks to playlist in batches of 100 (Spotify API limit)
+            if (trackUris.length > 0) {
+                for (let i = 0; i < trackUris.length; i += 100) {
+                    const batch = trackUris.slice(i, i + 100);
+                    await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`, {
                         method: 'POST',
                         headers: {
-                            'Authorization': 'Bearer ' + accessToken,
+                            'Authorization': `Bearer ${accessToken}`,
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            uris: validTrackUris
+                            uris: batch
                         })
-                    }).then(response => {
-                        if (!response.ok) {
-                            throw new Error('Failed to add tracks to playlist');
-                        }
-                        return {
-                            playlistId: playlistId,
-                            playlistName: currentPlaylistName,
-                            songCount: validTrackUris.length,
-                            totalSongs: songCount
-                        };
                     });
-                });
-            })
-            .then(playlistInfo => {
-                // Show success page with playlist details
-                step3.classList.add('hidden');
-                step4.classList.remove('hidden');
-                
-                // Display playlist details
-                playlistDetails.innerHTML = `
-                    <p><strong>Playlist Name:</strong> ${playlistInfo.playlistName}</p>
-                    <p><strong>Songs Added:</strong> ${playlistInfo.songCount} of ${playlistInfo.totalSongs} songs</p>
-                    <p><strong>Created On:</strong> ${new Date().toLocaleString()}</p>
-                `;
-                
-                confirmationMessage.innerHTML = `
-                    <p class="status success">Your playlist has been added to your Spotify account!</p>
-                    <a href="https://open.spotify.com/playlist/${playlistInfo.playlistId}" target="_blank">
-                        <button>View on Spotify</button>
-                    </a>
-                `;
-                
-                // Clear form for next use
-                playlistNameInput.value = '';
-                songsInput.value = '';
-                currentPlaylistName = '';
-                processedSongs = [];
-                
-                // Add notification in chat window
-                if (activeTab === 'chat-tab') {
-                    addChatMessage('assistant', `Great news! Your playlist "${playlistInfo.playlistName}" has been created with ${playlistInfo.songCount} songs.`);
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                step3.classList.add('hidden');
-                step4.classList.remove('hidden');
-                
-                playlistDetails.innerHTML = '';
-                confirmationMessage.innerHTML = `
-                    <p class="status error">Error: ${error.message}</p>
-                    <p>Please try again later.</p>
-                `;
-            });
-        });
+            }
+        }
         
-        // Start over
-        startOverBtn.addEventListener('click', function() {
-            // Form should already be cleared
-            step4.classList.add('hidden');
-            mainContainer.classList.remove('hidden');
+        function resetToCreatePage() {
+            // Clear all data for a new playlist
+            songs = [];
+            playlistTitle.value = '';
+            songInput.value = '';
+            renderSongList();
+            createPlaylistButton.disabled = true;
+            
+            // Show create playlist page
+            showPage(createPlaylistPage);
+        }
+    </script>
+</body>
+</html>
