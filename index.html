@@ -5,7 +5,153 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Spotify Playlist Maker</title>
     <style>
-        /* [Previous CSS remains the same] */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 90%;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        h1, h2, h3 {
+            color: #1db954;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #b3b3b3;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #333;
+            color: #fff;
+            box-sizing: border-box;
+        }
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #333;
+            color: #fff;
+            box-sizing: border-box;
+            resize: vertical;
+            font-family: inherit;
+            font-size: 1em;
+        }
+        button {
+            background-color: #1db954;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #1ed760;
+        }
+        button.remove {
+            background-color: #ff5050;
+        }
+        button.remove:hover {
+            background-color: #ff7070;
+        }
+        #songList {
+            margin-top: 20px;
+        }
+        .song-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: #282828;
+            border-radius: 4px;
+        }
+        .song-details {
+            flex-grow: 1;
+        }
+        .preview-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 15px;
+            background-color: #282828;
+            border-radius: 4px;
+        }
+        .preview-image {
+            width: 64px;
+            height: 64px;
+            margin-right: 15px;
+            border-radius: 4px;
+        }
+        .preview-details {
+            flex-grow: 1;
+        }
+        .preview-actions {
+            display: flex;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .success-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .success-content {
+            background-color: #1e1e1e;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 500px;
+        }
+        .success-icon {
+            color: #1db954;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        .auth-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+        #login-button {
+            padding: 15px 30px;
+            font-size: 18px;
+        }
+        .song-help {
+            color: #b3b3b3;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
         .ai-section {
             background-color: #2c2c2c;
             padding: 20px;
@@ -38,13 +184,34 @@
     </style>
 </head>
 <body>
-    <!-- [Previous HTML remains the same, with the following addition after the song input section] -->
-    
-    <!-- AI Playlist Generation Section -->
-    <div id="app-section" class="container">
-        <!-- [Existing content] -->
+    <!-- Login Section -->
+    <div id="login-section" class="container">
+        <h1>Spotify Playlist Maker</h1>
+        <p>Create custom playlists with AI-assisted song recognition</p>
+        <div class="auth-container">
+            <button id="login-button">Login with Spotify</button>
+        </div>
+    </div>
+
+    <!-- Main App (hidden until logged in) -->
+    <div id="app-section" class="container hidden">
+        <h1>Create Spotify Playlist</h1>
         
-        <!-- New AI Playlist Generation Section -->
+        <!-- Playlist Title Form -->
+        <div class="form-group">
+            <label for="playlistTitle">Playlist Title:</label>
+            <input type="text" id="playlistTitle" placeholder="Enter playlist name...">
+        </div>
+        
+        <!-- Song Input Form -->
+        <div class="form-group">
+            <label for="songInput">Add Songs:</label>
+            <textarea id="songInput" placeholder="Enter one song per line (e.g., 'Adele Hello')"></textarea>
+            <p class="song-help">Enter one song per line. Format: Artist - Song Title (or just type song names)</p>
+            <button id="addSongsBtn">Add Songs</button>
+        </div>
+        
+        <!-- AI Playlist Generation Section -->
         <div class="ai-section">
             <h2>🤖 AI Playlist Generator</h2>
             <p>Let AI create a playlist based on your mood or activity!</p>
@@ -52,64 +219,197 @@
             <button id="generateAIPlaylistBtn">Generate AI Playlist</button>
             <div id="aiLoadingIndicator" class="ai-loading hidden">Generating playlist...</div>
         </div>
+        
+        <!-- Song Search Preview Section -->
+        <div id="searchPreview" class="hidden">
+            <h3>Song Matches</h3>
+            <div id="searchResults"></div>
+        </div>
+        
+        <!-- Selected Songs List -->
+        <div id="songList">
+            <h3>Your Playlist</h3>
+            <div id="selectedSongs"></div>
+        </div>
+        
+        <!-- Create Playlist Button -->
+        <div style="text-align: center; margin-top: 20px;">
+            <button id="createPlaylistBtn" disabled>Create Playlist</button>
+        </div>
+    </div>
+    
+    <!-- Success Popup (hidden initially) -->
+    <div id="successPopup" class="success-popup hidden">
+        <div class="success-content">
+            <div class="success-icon">✓</div>
+            <h2>Success!</h2>
+            <p>Your playlist has been created successfully.</p>
+            <button id="newPlaylistBtn">Create New Playlist</button>
+        </div>
     </div>
 
     <script>
-        // [Previous script remains the same, with the following additions]
-
-        // Claude API Configuration (Note: Replace with actual Anthropic API key)
-        const CLAUDE_API_KEY = 'YOUR_ANTHROPIC_API_KEY';
+        // Spotify API configuration
+        const clientId = '82910fe423f24953a93aa6188fd25c58';
+        const redirectUri = 'https://akwasifosuhene.github.io/akwasi/';
+        const scopes = 'playlist-modify-private playlist-modify-public';
+        
+        // UI Elements
+        const loginSection = document.getElementById('login-section');
+        const appSection = document.getElementById('app-section');
+        const loginButton = document.getElementById('login-button');
+        const playlistTitleInput = document.getElementById('playlistTitle');
+        const songInput = document.getElementById('songInput');
+        const addSongsBtn = document.getElementById('addSongsBtn');
+        const searchPreview = document.getElementById('searchPreview');
+        const searchResults = document.getElementById('searchResults');
+        const selectedSongs = document.getElementById('selectedSongs');
+        const createPlaylistBtn = document.getElementById('createPlaylistBtn');
+        const successPopup = document.getElementById('successPopup');
+        const newPlaylistBtn = document.getElementById('newPlaylistBtn');
         
         // AI Playlist Generation Elements
         const aiPrompt = document.getElementById('aiPrompt');
         const generateAIPlaylistBtn = document.getElementById('generateAIPlaylistBtn');
         const aiLoadingIndicator = document.getElementById('aiLoadingIndicator');
 
-        // Function to generate playlist using Claude AI
+        // App state
+        let accessToken = null;
+        let userId = null;
+        let selectedTracks = [];
+        let searchQueue = [];
+        let isProcessingQueue = false;
+        
+        // Function to parse query parameters from URL
+        function getHashParams() {
+            const hashParams = {};
+            const hash = window.location.hash.substring(1);
+            
+            if (hash) {
+                const params = hash.split('&');
+                params.forEach(param => {
+                    const [key, value] = param.split('=');
+                    hashParams[key] = decodeURIComponent(value);
+                });
+            }
+            
+            return hashParams;
+        }
+        
+        // Function to handle Spotify login
+        loginButton.addEventListener('click', () => {
+            const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&response_type=token`;
+            window.location.href = authUrl;
+        });
+        
+        // Function to check if user is logged in and initialize app
+        function initializeApp() {
+            const params = getHashParams();
+            
+            if (params.access_token) {
+                accessToken = params.access_token;
+                loginSection.classList.add('hidden');
+                appSection.classList.remove('hidden');
+                
+                // Clear the URL fragment
+                history.replaceState(null, null, ' ');
+                
+                // Get user profile
+                fetch('https://api.spotify.com/v1/me', {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    userId = data.id;
+                });
+            }
+        }
+        
+        // Mock playlist generation function
+        function generateMockPlaylist(prompt) {
+            const playlistTemplates = {
+                'workout': `
+                    Eminem - Lose Yourself
+                    Kanye West - Stronger
+                    AC/DC - Thunderstruck
+                    Survivor - Eye of the Tiger
+                    Queen - Don't Stop Me Now
+                `,
+                'study': `
+                    Ludovico Einaudi - Nuvole Bianche
+                    Hans Zimmer - Time
+                    Brian Crain - Piano and Light
+                    Yiruma - River Flows in You
+                    Max Richter - On the Nature of Daylight
+                `,
+                'relaxation': `
+                    Jack Johnson - Sitting, Waiting, Wishing
+                    Bon Iver - Holocene
+                    Norah Jones - Come Away With Me
+                    Jason Mraz - I'm Yours
+                    Bob Marley - Three Little Birds
+                `
+            };
+
+            const defaultTemplate = `
+                The Beatles - Let It Be
+                Bob Dylan - Blowin' in the Wind
+                Queen - Bohemian Rhapsody
+                Michael Jackson - Billie Jean
+                Coldplay - Fix You
+            `;
+
+            const lowercasePrompt = prompt.toLowerCase();
+            
+            if (lowercasePrompt.includes('workout') || lowercasePrompt.includes('exercise')) {
+                return playlistTemplates['workout'];
+            } else if (lowercasePrompt.includes('study') || lowercasePrompt.includes('focus')) {
+                return playlistTemplates['study'];
+            } else if (lowercasePrompt.includes('relax') || lowercasePrompt.includes('calm')) {
+                return playlistTemplates['relaxation'];
+            }
+
+            return defaultTemplate;
+        }
+
+        // Function to generate playlist using mock AI
         async function generateAIPlaylist(prompt) {
             aiLoadingIndicator.classList.remove('hidden');
             generateAIPlaylistBtn.disabled = true;
 
             try {
-                // Simulate Claude API call (replace with actual Anthropic API implementation)
-                const response = await fetch('https://api.anthropic.com/v1/messages', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-API-Key': CLAUDE_API_KEY,
-                        'anthropic-version': '2023-06-01'
-                    },
-                    body: JSON.stringify({
-                        model: 'claude-3-sonnet-20240229',
-                        max_tokens: 1000,
-                        messages: [
-                            {
-                                role: 'user',
-                                content: `Generate a playlist of 10-15 songs for: ${prompt}. 
-                                    Format each recommendation as:
-                                    Artist - Song Title
-                                    Provide a brief reason why each song fits the playlist theme.`
-                            }
-                        ]
-                    })
-                });
-
-                const data = await response.json();
-                const playlistText = data.content[0].text;
+                // Generate mock playlist
+                const mockPlaylistResponse = generateMockPlaylist(prompt);
 
                 // Process the playlist text
-                const songLines = playlistText.split('\n')
-                    .filter(line => line.includes(' - '))
-                    .map(line => line.split(' - ')[0]);
+                const songLines = mockPlaylistResponse
+                    .split('\n')
+                    .filter(line => line.trim() !== '' && line.includes(' - '))
+                    .map(line => line.split(' - ')[0].trim());
 
-                // Search and add tracks
+                console.log('Generated Song Lines:', songLines);
+
+                if (songLines.length === 0) {
+                    throw new Error('No songs generated');
+                }
+
+                // Clear previous search results
+                searchResults.innerHTML = '';
                 searchQueue = songLines;
+                
+                // Reset processing state
                 isProcessingQueue = false;
-                processNextSong();
+                
+                // Start processing songs
+                await processNextSong();
 
             } catch (error) {
                 console.error('AI Playlist Generation Error:', error);
-                alert('Failed to generate playlist. Please try again.');
+                
+                // Detailed error logging
+                alert(`Playlist Generation Failed: ${error.message}`);
             } finally {
                 aiLoadingIndicator.classList.add('hidden');
                 generateAIPlaylistBtn.disabled = false;
@@ -125,6 +425,331 @@
                 alert('Please enter a playlist description');
             }
         });
+        
+        // Function to search for songs based on input
+        async function searchSongs(query) {
+            if (!accessToken) {
+                console.error('No access token available');
+                return [];
+            }
+
+            try {
+                const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`, {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    // Log detailed error response
+                    const errorBody = await response.text();
+                    console.error('Search API Error:', response.status, errorBody);
+                    return [];
+                }
+
+                const data = await response.json();
+                return data.tracks.items;
+            } catch (error) {
+                console.error('Error searching for songs:', error);
+                return [];
+            }
+        }
+        
+        // Modify processNextSong to add more robust error handling
+        async function processNextSong() {
+            if (searchQueue.length === 0) {
+                isProcessingQueue = false;
+                console.log('Search queue is empty');
+                return;
+            }
+
+            isProcessingQueue = true;
+
+            try {
+                // Get the next song input
+                const songInput = searchQueue.shift();
+                console.log('Processing song:', songInput);
+
+                // Search for songs
+                const results = await searchSongs(songInput);
+
+                // Display search results
+                if (results.length > 0) {
+                    displaySearchResults(results);
+                } else {
+                    console.warn(`No results found for: ${songInput}`);
+                    // Continue to next song
+                    await processNextSong();
+                }
+            } catch (error) {
+                console.error('Error in processNextSong:', error);
+                
+                // Try to continue with next song
+                if (searchQueue.length > 0) {
+                    await processNextSong();
+                } else {
+                    isProcessingQueue = false;
+                }
+            }
+        }
+        
+        // Function to analyze song input using AI-like heuristics
+        function analyzeSongInput(input) {
+            let artist = '';
+            let song = '';
+            
+            if (input.includes(' - ')) {
+                [artist, song] = input.split(' - ');
+            } else if (input.includes(' by ')) {
+                [song, artist] = input.split(' by ');
+            } else if (input.includes(':')) {
+                [artist, song] = input.split(':');
+            } else {
+                const words = input.split(' ');
+                if (words.length > 1) {
+                    artist = words[0];
+                    song = words.slice(1).join(' ');
+                } else {
+                    song = input;
+                }
+            }
+            
+            return {
+                artist: artist.trim(),
+                song: song.trim(),
+                searchQuery: input.trim()
+            };
+        }
+        
+        // Function to process multiple songs
+        addSongsBtn.addEventListener('click', () => {
+            const inputText = songInput.value.trim();
+            if (!inputText) return;
+            
+            // Split by new lines
+            const songLines = inputText.split('\n').filter(line => line.trim() !== '');
+            
+            if (songLines.length > 0) {
+                // Add all songs to the search queue
+                searchQueue = [...searchQueue, ...songLines];
+                
+                // Start processing if not already running
+                if (!isProcessingQueue) {
+                    processNextSong();
+                }
+                
+                // Clear the input area
+                songInput.value = '';
+            }
+        });
+        
+        // Function to display search results
+        function displaySearchResults(results) {
+            searchResults.innerHTML = '';
+            
+            if (results.length === 0) {
+                searchResults.innerHTML = '<p>No songs found for this search. Continuing to the next song...</p>';
+                
+                // Continue to the next song after a brief delay
+                setTimeout(() => {
+                    processNextSong();
+                }, 1500);
+            } else {
+                // Create a title showing what we're searching for
+                const titleElement = document.createElement('h4');
+                titleElement.textContent = 'Select a match for this song:';
+                searchResults.appendChild(titleElement);
+                
+                // Show the top matches
+                results.forEach(track => {
+                    const previewDiv = document.createElement('div');
+                    previewDiv.className = 'preview-container';
+                    
+                    const albumImg = track.album.images.length > 0 ? 
+                        track.album.images[track.album.images.length - 1].url : 
+                        '/api/placeholder/64/64';
+                    
+                    previewDiv.innerHTML = `
+                        <img src="${albumImg}" alt="Album cover" class="preview-image">
+                        <div class="preview-details">
+                            <strong>${track.name}</strong><br>
+                            ${track.artists.map(artist => artist.name).join(', ')} - ${track.album.name}
+                        </div>
+                        <div class="preview-actions">
+                            <button class="add-to-playlist" data-track-id="${track.id}" 
+                                data-track-name="${track.name}"
+                                data-artist-name="${track.artists[0].name}"
+                                data-album-img="${albumImg}"
+                                data-uri="${track.uri}">
+                                Add
+                            </button>
+                        </div>
+                    `;
+                    
+                    searchResults.appendChild(previewDiv);
+                });
+                
+                // Add a skip button
+                const skipDiv = document.createElement('div');
+                skipDiv.style.textAlign = 'center';
+                skipDiv.style.marginTop = '10px';
+                
+                const skipButton = document.createElement('button');
+                skipButton.textContent = 'Skip this song';
+                skipButton.className = 'remove';
+                skipButton.addEventListener('click', () => {
+                    searchResults.innerHTML = '';
+                    processNextSong();
+                });
+                
+                skipDiv.appendChild(skipButton);
+                searchResults.appendChild(skipDiv);
+                
+                // Add event listeners to the add buttons
+                document.querySelectorAll('.add-to-playlist').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const trackInfo = {
+                            id: this.getAttribute('data-track-id'),
+                            name: this.getAttribute('data-track-name'),
+                            artist: this.getAttribute('data-artist-name'),
+                            image: this.getAttribute('data-album-img'),
+                            uri: this.getAttribute('data-uri')
+                        };
+                        
+                        addTrackToSelection(trackInfo);
+                        
+                        // Clear search results and process next song
+                        searchResults.innerHTML = '';
+                        processNextSong();
+                    });
+                });
+            }
+            
+            // Show search results section
+            searchPreview.classList.remove('hidden');
+        }
+        
+        // Function to add a track to the selected tracks list
+        function addTrackToSelection(trackInfo) {
+            // Check if track already exists in the selection
+            if (selectedTracks.some(track => track.id === trackInfo.id)) {
+                return;
+            }
+            
+            // Add to our tracks array
+            selectedTracks.push(trackInfo);
+            
+            // Create UI element
+            const trackElement = document.createElement('div');
+            trackElement.className = 'song-item';
+            trackElement.innerHTML = `
+                <div class="song-details">
+                    <strong>${trackInfo.name}</strong><br>
+                    ${trackInfo.artist}
+                </div>
+                <button class="remove" data-track-id="${trackInfo.id}">Remove</button>
+            `;
+            
+            selectedSongs.appendChild(trackElement);
+            
+            // Add event listener to remove button
+            trackElement.querySelector('.remove').addEventListener('click', function() {
+                const trackId = this.getAttribute('data-track-id');
+                removeTrackFromSelection(trackId);
+            });
+            
+            // Enable create playlist button if we have songs and a title
+            updateCreateButtonState();
+        }
+        
+        // Function to remove a track from the selected tracks list
+        function removeTrackFromSelection(trackId) {
+            // Remove from array
+            selectedTracks = selectedTracks.filter(track => track.id !== trackId);
+            
+            // Remove from UI
+            const trackElement = document.querySelector(`.song-item button[data-track-id="${trackId}"]`).parentNode;
+            trackElement.remove();
+            
+            // Update create button state
+            updateCreateButtonState();
+        }
+        
+        // Function to update create playlist button state
+        function updateCreateButtonState() {
+            const hasTitle = playlistTitleInput.value.trim() !== '';
+            const hasTracks = selectedTracks.length > 0;
+            
+            createPlaylistBtn.disabled = !(hasTitle && hasTracks);
+        }
+        
+        // Listen for playlist title changes
+        playlistTitleInput.addEventListener('input', updateCreateButtonState);
+        
+        // Function to create a playlist
+        createPlaylistBtn.addEventListener('click', async () => {
+            const playlistTitle = playlistTitleInput.value.trim();
+            
+            if (!playlistTitle || selectedTracks.length === 0) {
+                return;
+            }
+            
+            try {
+                // 1. Create an empty playlist
+                const createResponse = await fetch(`https://api.spotify.com/v1/users/${userId}/playlists`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: playlistTitle,
+                        description: 'Created with the Spotify Playlist Maker app',
+                        public: false
+                    })
+                });
+                
+                const playlist = await createResponse.json();
+                
+                // 2. Add tracks to the playlist
+                const trackUris = selectedTracks.map(track => track.uri);
+                
+                await fetch(`https://api.spotify.com/v1/playlists/${playlist.id}/tracks`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        uris: trackUris
+                    })
+                });
+                
+                // 3. Show success message
+                successPopup.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error creating playlist:', error);
+                alert('Error creating playlist. Please try again.');
+            }
+        });
+        
+        // Function to start a new playlist
+        newPlaylistBtn.addEventListener('click', () => {
+            // Clear everything
+            playlistTitleInput.value = '';
+            selectedSongs.innerHTML = '';
+            selectedTracks = [];
+            searchResults.innerHTML = '';
+            searchPreview.classList.add('hidden');
+            successPopup.classList.add('hidden');
+            
+            // Disable create button
+            createPlaylistBtn.disabled = true;
+        });
+        
+        // Initialize the app on load
+        window.addEventListener('load', initializeApp);
     </script>
 </body>
 </html>
